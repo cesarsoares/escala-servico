@@ -39,7 +39,9 @@
       "Bash(rm dados/escala.sqlite3.antes-3.3.1.bak)",
       "Bash(git checkout *)",
       "Bash(python -m pytest tests/test_participacao_por_cor.py tests/test_api_consulta.py tests/test_impressao.py tests/test_ajustes_0726.py -q)",
-      "Bash(python -m pytest tests/test_participacao_por_cor.py tests/test_api_consulta.py -q)"
+      "Bash(python -m pytest tests/test_participacao_por_cor.py tests/test_api_consulta.py -q)",
+      "Bash(git merge *)",
+      "Bash(git commit -m 'Permissões aprovadas nesta sessão \\(settings.json do projeto\\) *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\cesar\\AppData\\Local\\Temp\\claude\\c--Users-cesar-OneDrive-Documentos-projetos-escala\\9fbfa581-3529-44c1-8afc-0ec33252d2e7\\scratchpad"
