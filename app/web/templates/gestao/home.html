@@ -1,0 +1,300 @@
+{% extends "gestao/base_gestao.html" %}
+{% block title %}Painel — Gestão{% endblock %}
+{% block estilos %}<link rel="stylesheet" href="/static/graficos.css">{% endblock %}
+{% block gestao %}
+<div class="linha-topo">
+  <h2>Painel</h2>
+  <span class="sub">{{ dias_semana[hoje.weekday()] }}, {{ hoje.strftime('%d/%m/%Y') }}</span>
+</div>
+
+{# ORDEM DELIBERADA: o que faz alguém deixar de entrar de serviço vem primeiro;
+   contagem bonita vem por último. E o urgente não pode ter o MESMO peso visual
+   do contexto — daí esta faixa, que resume em uma olhada se há o que fazer. #}
+{% set descobertas = cobertura|rejectattr('em_dia')|list %}
+{% set pendencias = [] %}
+{% if descobertas %}{% set _ = pendencias.append(
+     (descobertas|length ~ ' escala(s) sem escalação fechada', '#cobertura')) %}{% endif %}
+{% if alertas.conflitos %}{% set _ = pendencias.append(
+     (alertas.conflitos|length ~ ' serviço(s) com militar impedido', '#atencao')) %}{% endif %}
+{% if alertas.efetivo_curto %}{% set _ = pendencias.append(
+     (alertas.efetivo_curto|length ~ ' dia(s) com efetivo insuficiente', '#atencao')) %}{% endif %}
+{% if alertas.mal_configuradas %}{% set _ = pendencias.append(
+     (alertas.mal_configuradas|length ~ ' escala(s) com menos gente que vagas', '#atencao')) %}{% endif %}
+{% if not hoje_serve %}{% set _ = pendencias.append(
+     ('ninguém escalado hoje', '#hoje')) %}{% endif %}
+
+{% if pendencias %}
+<section class="situacao urgente">
+  <h3>Precisa de você agora</h3>
+  <ul>
+    {% for texto, ancora in pendencias %}<li><a href="{{ ancora }}">{{ texto }}</a></li>{% endfor %}
+  </ul>
+</section>
+{% else %}
+<section class="situacao calma">
+  <h3>Escala em dia</h3>
+  <p>Cobertura fechada nos próximos {{ horizonte }} dias e nenhum conflito pendente.</p>
+</section>
+{% endif %}
+
+{# --- 1. Cobertura: a escala está fechada até quando? ---
+   Barra coberto × a fechar. A palavra vem junto da cor em todo segmento. #}
+<a id="cobertura"></a>
+<h3>Cobertura das escalas
+  <span class="fraco">— próximos {{ horizonte }} dias · clique para ver a escala</span></h3>
+<p class="legenda-graf">
+  <span><i class="seg-coberto"></i>coberto</span>
+  <span><i class="seg-afechar"></i>a fechar</span>
+</p>
+<div class="grafico-card">
+  {% for c in cobertura %}
+    <a class="grafico-linha" href="/gestao/escalas/{{ c.escala.id }}">
+      <div class="graf-topo"><span class="nome">{{ c.escala.nome }}</span>
+        <span>
+          {% if c.em_dia %}<span class="tag tag-criar">em dia</span>
+          {% else %}<span class="tag tag-excluir">descoberta</span>
+            <span class="fraco">a partir de {{ c.primeiro_descoberto.strftime('%d/%m') }}</span>
+          {% endif %}</span></div>
+      <div class="barra">
+        {% if c.cobertos %}
+          <span class="seg-coberto ini" style="width:{{ c.pct_coberto }}%">{{ c.cobertos }} cobertos</span>
+        {% endif %}
+        {% if c.descobertos %}
+          <span class="seg-afechar fim" style="width:{{ 100 - c.pct_coberto }}%">{{ c.descobertos|length }} a fechar</span>
+        {% endif %}
+      </div>
+      <div class="graf-nota">
+        {% if c.total_na_janela %}
+          {{ c.cobertos }} de {{ c.total_na_janela }} dias cobertos{% if c.descobertos %}
+          · {{ c.descobertos|length }} a fechar{% endif %}
+        {% else %}
+          nenhum dia desta escala cai na janela — ela não roda nestes dias
+        {% endif %}
+      </div>
+    </a>
+  {% else %}
+    <p class="sub">Nenhuma escala ativa.</p>
+  {% endfor %}
+</div>
+
+{# --- 2. Exige atenção --- #}
+<a id="atencao"></a>
+<h3>Exige atenção
+  {% if alertas.total %}<span class="tag tag-excluir">{{ alertas.total }}</span>{% endif %}</h3>
+{% if not alertas.total %}
+  <p class="sub">Nada pendente nos próximos {{ horizonte }} dias.</p>
+{% endif %}
+
+{% if alertas.conflitos %}
+<p class="erro"><strong>{{ alertas.conflitos|length }}</strong> serviço(s) com militar
+  <strong>impedido</strong> no dia. Isso acontece quando a dispensa é lançada depois
+  de fechar o mês: o que está gravado envelheceu. Re-escale o período marcando
+  <em>regravar</em> (regra 7.5).</p>
+<table class="tabela">
+  <thead><tr><th>Dia</th><th>Escala</th><th>Escalado</th><th>Impedimento</th><th></th></tr></thead>
+  <tbody>
+  {% for c in alertas.conflitos[:10] %}
+    <tr>
+      <td>{{ c.dia.strftime('%d/%m') }} <span class="fraco">{{ dias_semana[c.dia.weekday()] }}</span></td>
+      <td>{{ c.escala }}</td>
+      <td>{{ c.militar }}</td>
+      <td class="fraco">{{ c.impedimento[0].strftime('%d/%m') }} a {{ c.impedimento[1].strftime('%d/%m') }}</td>
+      <td><a class="botao mini secundario" href="/gestao/escalar">regravar</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% if alertas.efetivo_curto %}
+<p class="sub"><strong>Efetivo insuficiente (regra 7.8)</strong> — dias fechados com
+  menos militares do que vagas:</p>
+<ul class="avisos">
+  {% for a in alertas.efetivo_curto[:10] %}
+    <li>{{ a.dia.strftime('%d/%m/%Y') }} — {{ a.escala }}:
+        {{ a.gravados }} de {{ a.postos }} vaga(s) preenchida(s)</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+{% if alertas.mal_configuradas %}
+<ul class="avisos">
+  {% for a in alertas.mal_configuradas %}
+    <li><a href="/gestao/escalas/{{ a.escala_id }}">{{ a.escala }}</a> tem
+        {{ a.participantes }} participante(s) para {{ a.postos }} vaga(s) por dia —
+        não há como fechar o dia (regra 7.8).</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+{# --- 3. Serviço de hoje e amanhã, e quem entra depois --- #}
+<a id="hoje"></a>
+<h3>Serviço de hoje <span class="fraco">— {{ hoje.strftime('%d/%m') }}</span></h3>
+{% if hoje_serve %}
+<table class="tabela">
+  <thead><tr><th>Escala</th><th>Cor</th><th>Escalado</th><th>Janela</th></tr></thead>
+  <tbody>
+  {% for s in hoje_serve %}
+    <tr>
+      <td>{{ s.escala }}</td>
+      <td><span class="tag cor-{{ s.cor.value }}">{{ s.cor.value }}</span></td>
+      <td>{{ s.militar }}
+        {% if s.substituto %}
+          {# A folga é de quem estava escalado, nunca de quem cobriu (regra 9). #}
+          <span class="fraco">— coberto por</span> <strong>{{ s.substituto }}</strong>
+        {% endif %}</td>
+      <td class="fraco">{{ s.inicio.strftime('%H:%M') }} → {{ s.termino.strftime('%d/%m %H:%M') }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="erro">Ninguém escalado hoje em nenhuma escala.</p>
+{% endif %}
+
+<h3>Amanhã <span class="fraco">— {{ amanha.strftime('%d/%m') }}</span></h3>
+{% if amanha_serve %}
+<table class="tabela">
+  <thead><tr><th>Escala</th><th>Cor</th><th>Escalado</th></tr></thead>
+  <tbody>
+  {% for s in amanha_serve %}
+    <tr>
+      <td>{{ s.escala }}</td>
+      <td><span class="tag cor-{{ s.cor.value }}">{{ s.cor.value }}</span></td>
+      <td>{{ s.militar }}{% if s.substituto %}
+        <span class="fraco">— coberto por</span> <strong>{{ s.substituto }}</strong>{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% elif proximos %}
+{# Amanhã não está fechado: mostra quem o MOTOR escalaria, sem gravar nada. #}
+<p class="sub">Amanhã ainda não está fechado. Pela fila de hoje, entrariam:</p>
+<table class="tabela">
+  <thead><tr><th>Escala</th><th>Cor</th><th>Próximos na fila (mais folgados)</th></tr></thead>
+  <tbody>
+  {% for p in proximos %}
+    <tr>
+      <td>{{ p.escala }}</td>
+      <td><span class="tag cor-{{ p.cor.value }}">{{ p.cor.value }}</span></td>
+      <td>{{ p.militares|join(' · ') }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="sub">Previsão do motor, ainda não gravada — pode mudar com impedimento ou permuta.</p>
+{% else %}
+<p class="sub">Nenhuma escala roda amanhã.</p>
+{% endif %}
+
+{# --- 4. Saúde do cadastro: os desempates dependem disto --- #}
+<h3>Completude do cadastro
+  <span class="fraco">— campos de desempate da fila · clique para completar</span></h3>
+<p class="sub">Os critérios de desempate (regra 9) dependem destes campos. Enquanto
+  faltarem, a ordem entre militares empatados é decidida sem eles. O número de
+  antiguidade (9.5) não vem na ficha em PDF: tem de ser digitado.</p>
+<p class="legenda-graf">
+  <span><i class="seg-ok"></i>preenchido</span>
+  <span><i class="seg-falta"></i>faltando</span>
+</p>
+<a class="grafico-linha grafico-card bloco" href="/gestao/militares"
+   style="display:block;margin-bottom:12px">
+  {% for c in saude.campos %}
+    <div class="graf-item">
+      <div class="rot"><span class="campo">{{ c.rotulo }}</span>
+        <span class="graf-nota" style="margin:0">{{ c.ok }} de {{ c.total }} {{ c.unidade }}</span></div>
+      <div class="barra">
+        <span class="seg-ok" style="width:{{ c.pct_ok }}%"></span>
+        <span class="seg-falta" style="width:{{ 100 - c.pct_ok }}%"></span>
+      </div>
+      <div class="graf-rodape {{ 'ok' if c.completo else 'alerta' }}">
+        {{ 'completo' if c.completo else c.aviso }}</div>
+    </div>
+  {% endfor %}
+</a>
+<p class="sub">A ficha individual em PDF preenche quase tudo de uma vez.</p>
+
+{# --- 5. Equidade da rotação ---
+   Barra de amplitude: do que serviu MENOS ao que serviu MAIS, na mesma escala
+   0..máximo. Quem nunca serviu puxa o piso para zero — senão o número mentiria. #}
+<h3>Distribuição no ano
+  <span class="fraco">— serviços por militar em {{ hoje.year }} · clique para ver a escala</span></h3>
+<p class="sub">Cada barra mostra a amplitude entre quem serviu <strong>menos</strong> e quem
+  serviu <strong>mais</strong>. Quanto maior a diferença, mais desequilibrada a fila —
+  o que é natural quando a escala roda há pouco tempo ou houve impedimento, mas não
+  deve crescer sem explicação.</p>
+<div class="grafico-card">
+  {% for e in equidade %}
+    {% if not loop.first %}<div class="divisor"></div>{% endif %}
+    <a class="grafico-linha" href="/gestao/escalas/{{ e.escala_id }}">
+      <div class="graf-topo"><span class="nome">{{ e.escala }}</span>
+        <span class="graf-nota" style="margin:0">{{ e.participantes }} participantes</span></div>
+      <div class="faixa {{ 'alerta' if e.vigiar }}">
+        <div class="trilho"></div>
+        {% if e.maximo %}
+          <div class="amplitude" style="left:{{ e.pct_piso }}%;width:{{ e.pct_amplitude }}%"></div>
+          <div class="ponto" style="left:{{ e.pct_piso }}%"></div>
+          <div class="ponto cheio" style="left:100%"></div>
+        {% endif %}
+      </div>
+      <div class="dist-meta">
+        <span><b>{{ e.piso }}</b> serviço mín.</span>
+        <span><b>{{ e.maximo }}</b> serviço máx.</span>
+        <span class="dif {{ 'vigiar' if e.vigiar else 'equil' }}">diferença {{ e.desequilibrio }}
+          · {{ 'vigiar' if e.vigiar else 'equilibrada' }}</span>
+      </div>
+      <div class="barra-fina">
+        {% if e.servidos %}<span class="seg-serviram" style="width:{{ e.pct_serviram }}%"></span>{% endif %}
+        {% if e.nunca_serviram %}<span class="seg-nunca" style="width:{{ 100 - e.pct_serviram }}%"></span>{% endif %}
+      </div>
+      <div class="graf-nota">{{ e.servidos }} já serviram{% if e.nunca_serviram %}
+        · {{ e.nunca_serviram }} nunca serviram{% endif %}</div>
+    </a>
+  {% endfor %}
+</div>
+
+{# --- 6. Contexto --- #}
+{% if feriados_proximos %}
+<h3>Dias vermelhos à frente</h3>
+<ul class="avisos">
+  {% for f in feriados_proximos %}
+    <li>{{ f.data.strftime('%d/%m/%Y') }} ({{ dias_semana[f.data.weekday()] }}) — {{ f.nome }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+<div class="cards">
+  <a class="card" href="/gestao/militares">
+    <span class="num">{{ contagens.militares }}</span><span class="rot">militares ativos</span>
+  </a>
+  <a class="card" href="/gestao/escalas">
+    <span class="num">{{ contagens.escalas }}</span><span class="rot">escalas ativas</span>
+  </a>
+  <a class="card" href="/gestao/escalar">
+    <span class="num">{{ contagens.servicos }}</span><span class="rot">serviços gravados</span>
+  </a>
+</div>
+
+<div class="linha-topo">
+  <h3>Últimas alterações</h3>
+  <a href="/gestao/auditoria">ver o histórico completo →</a>
+</div>
+{% if auditoria %}
+<table class="tabela">
+  <thead><tr><th>Quando</th><th>Ação</th><th>Entidade</th><th>Registro</th></tr></thead>
+  <tbody>
+  {% for a in auditoria %}
+    <tr>
+      {# o banco grava em UTC; o filtro traz para o fuso do servidor #}
+      <td>{{ a.criado_em|hora_local }}</td>
+      <td><span class="tag tag-{{ a.acao }}">{{ a.acao }}</span></td>
+      <td>{{ a.entidade }}</td>
+      <td>{{ a.entidade_id if a.entidade_id is not none else '—' }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="sub">Nenhuma alteração registrada ainda.</p>
+{% endif %}
+{% endblock %}

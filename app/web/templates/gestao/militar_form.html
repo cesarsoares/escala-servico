@@ -1,0 +1,61 @@
+{% extends "gestao/base_gestao.html" %}
+{% block title %}{{ 'Editar' if militar_id else 'Novo' }} militar — Gestão{% endblock %}
+{% block gestao %}
+<p class="sub"><a href="/gestao/militares">← Efetivo</a></p>
+<h2>{{ 'Editar militar' if militar_id else 'Novo militar' }}</h2>
+{% if erro %}<p class="erro">{{ erro }}</p>{% endif %}
+
+{% if avisos %}
+<ul class="avisos">{% for a in avisos %}<li>{{ a }}</li>{% endfor %}</ul>
+{% endif %}
+
+<form method="post" action="{{ '/gestao/militares/' ~ militar_id if militar_id else '/gestao/militares' }}"
+      class="formulario col">
+  {# Importação da ficha: MESMO formulário, outro destino (formaction). Assim o
+     que já foi digitado vai junto e volta na tela — inclusive o nº de
+     antiguidade, que a ficha nunca traz (regra 9.5). `formnovalidate` porque
+     ler a ficha é justamente o que se faz com o formulário ainda vazio. #}
+  <div class="importar">
+    <label>Importar ficha individual (PDF — SiCaPEx ou SCGPE)
+      <input type="file" name="arquivo" accept="application/pdf,.pdf"></label>
+    <button type="submit" class="secundario" formnovalidate
+            formenctype="multipart/form-data"
+            formaction="{{ '/gestao/militares/' ~ militar_id ~ '/importar' if militar_id else '/gestao/militares/importar' }}">Ler ficha e preencher</button>
+  </div>
+  <div class="grade2">
+    <label>Nome de guerra *
+      <input name="nome_guerra" value="{{ v.get('nome_guerra','') }}" required maxlength="60"></label>
+    <label>Nome completo *
+      <input name="nome_completo" value="{{ v.get('nome_completo','') }}" required maxlength="160"></label>
+    <label>Posto / Graduação *
+      <select name="posto_graduacao_id" required>
+        <option value="">—</option>
+        {% for p in postos %}
+          <option value="{{ p.id }}" {{ 'selected' if v.get('posto_graduacao_id')|string == p.id|string }}>{{ p.sigla }} — {{ p.nome }}</option>
+        {% endfor %}
+      </select></label>
+    <label>OM *
+      <select name="om_id" required>
+        <option value="">—</option>
+        {% for o in oms %}
+          <option value="{{ o.id }}" {{ 'selected' if v.get('om_id')|string == o.id|string }}>{{ o.sigla }}</option>
+        {% endfor %}
+      </select></label>
+    <label>Identidade militar
+      <input name="identidade" value="{{ v.get('identidade','') }}" maxlength="20"></label>
+    <label>CPF
+      <input name="cpf" value="{{ v.get('cpf','') }}" maxlength="14"></label>
+    <label>Data de promoção
+      <input type="date" name="data_promocao" value="{{ v.get('data_promocao','') }}"></label>
+    <label>Data de praça
+      <input type="date" name="data_praca" value="{{ v.get('data_praca','') }}"></label>
+    <label>Data de nascimento
+      <input type="date" name="data_nascimento" value="{{ v.get('data_nascimento','') }}"></label>
+    <label>Nº antiguidade <span class="fraco">(só praças)</span>
+      <input type="number" min="1" name="numero_antiguidade" value="{{ v.get('numero_antiguidade','') }}"></label>
+  </div>
+  <button type="submit">{{ 'Salvar' if militar_id else 'Cadastrar' }}</button>
+</form>
+<p class="sub">* obrigatório. Os demais campos (identidade, datas, antiguidade) podem
+ficar em branco e ser completados depois pela ficha.</p>
+{% endblock %}

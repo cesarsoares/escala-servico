@@ -1,0 +1,38 @@
+{% extends "gestao/base_gestao.html" %}
+{% block title %}Registrar permuta — Gestão{% endblock %}
+{% block gestao %}
+<p class="sub"><a href="/gestao/permutas?escala_id={{ servico.escala_id }}&ano={{ servico.dia.year }}&mes={{ servico.dia.month }}">← Permutas</a></p>
+<h2>Registrar permuta</h2>
+
+{% if erro %}<p class="erro">{{ erro }}</p>{% endif %}
+
+<div class="resultado">
+  <h3>{{ escala.nome }} — {{ servico.dia.strftime('%d/%m/%Y') }} ({{ servico.cor.value }})</h3>
+  <p>Escalado: <strong>{{ escalado.posto_graduacao.sigla }} {{ escalado.nome_guerra }}</strong>
+     <span class="fraco">({{ escalado.om.sigla }})</span></p>
+  <p class="sub">Serviço de {{ servico.inicio_dt.strftime('%d/%m %H:%M') }}
+     a {{ servico.termino_dt.strftime('%d/%m %H:%M') }}.
+     A folga deste serviço permanece com o escalado (regra 9).</p>
+</div>
+
+<form method="post" action="/gestao/permutas/servico/{{ servico.id }}" class="formulario">
+  <label>Substituto
+    <select name="militar_substituto_id" required>
+      <option value="">—</option>
+      {% for sigla, gente in candidatos %}
+        <optgroup label="{{ sigla }}">
+        {% for m in gente %}
+          <option value="{{ m.id }}">{{ m.nome_guerra }} ({{ m.om.sigla }})</option>
+        {% endfor %}
+        </optgroup>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Observação<input type="text" name="observacao" maxlength="200"></label>
+  <button type="submit">Registrar permuta</button>
+</form>
+
+<p class="sub">A lista traz os participantes ativos desta escala. A permuta é recusada
+se o substituto estiver impedido, já de serviço no dia, ou se a troca ferir a folga
+mínima dele (regra 10.5).</p>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ escala.nome if escala else "Escala" }} — {{ mes_nome }}/{{ ano }}{% endblock %}
+{% block content %}
+{% if not escalas %}
+  <section class="aviso"><p>Nenhuma escala cadastrada ainda.</p></section>
+{% else %}
+<nav class="escalas">
+  {% for e in escalas %}
+    <a href="/?escala_id={{ e.id }}&ano={{ ano }}&mes={{ mes }}"
+       class="chip {{ 'ativo' if e.id == escala.id }}">{{ e.nome }}</a>
+  {% endfor %}
+</nav>
+
+<div class="mes-nav">
+  <a class="seta" href="/?escala_id={{ escala.id }}&ano={{ prev[0] }}&mes={{ prev[1] }}">&larr;</a>
+  <h2>{{ mes_nome|capitalize }} / {{ ano }}</h2>
+  <a class="seta" href="/?escala_id={{ escala.id }}&ano={{ prox[0] }}&mes={{ prox[1] }}">&rarr;</a>
+  <a class="botao imprimir" href="/escalas/{{ escala.id }}/impressao?ano={{ ano }}&mes={{ mes }}">
+    Versão para impressão</a>
+</div>
+
+<table class="calendario">
+  <thead>
+    <tr>{% for d in dias_semana %}<th>{{ d }}</th>{% endfor %}</tr>
+  </thead>
+  <tbody>
+    {% for semana in semanas %}
+    <tr>
+      {% for c in semana %}
+      <td class="dia cor-{{ c.cor }} {{ 'fora' if not c.no_mes }} {{ 'hoje' if c.hoje }}">
+        <span class="num">{{ c.dia }}{% if c.feriado and c.no_mes %} <span class="fer" title="feriado">•</span>{% endif %}</span>
+        {% for m in c.militares %}<span class="mil"><span class="pg">{{ m.posto }}</span> {{ m.nome }}</span>{% endfor %}
+      </td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<p class="legenda">
+  <span class="amostra cor-preta"></span> dia útil (preta)
+  <span class="amostra cor-vermelha"></span> fim de semana / feriado (vermelha)
+  <span class="fer">•</span> feriado
+</p>
+{% endif %}
+{% endblock %}

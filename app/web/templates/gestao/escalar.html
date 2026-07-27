@@ -1,0 +1,58 @@
+{% extends "gestao/base_gestao.html" %}
+{% block title %}Escalar período — Gestão{% endblock %}
+{% block gestao %}
+<h2>Escalar período</h2>
+<p class="sub">Fecha a escala dia a dia no período (regras 6/7). Idempotente: dias já
+gravados não são duplicados.</p>
+<p class="sub">Para carregar serviços <strong>que já aconteceram</strong> (vindos de
+planilha), use <a href="/gestao/importar">importar histórico</a> — o motor não escala
+o passado.</p>
+
+{% if erro %}<p class="erro">{{ erro }}</p>{% endif %}
+
+{% if resultado %}
+<div class="resultado">
+  <h3>{{ resultado.escala.nome }} — {{ resultado.inicio.strftime('%d/%m/%Y') }} a {{ resultado.fim.strftime('%d/%m/%Y') }}</h3>
+  <ul>
+    <li><strong>{{ resultado.dias }}</strong> dias processados</li>
+    <li><strong>{{ resultado.servicos }}</strong> serviços gravados
+      {% if resultado.pretendidos != resultado.servicos %}
+        <span class="sub">(de {{ resultado.pretendidos }} previstos — o restante já
+        estava gravado; marque "regravar" para refazer)</span>
+      {% endif %}</li>
+    <li>dias com efetivo insuficiente (regra 7.8):
+        <strong class="{{ 'alerta' if resultado.alertas }}">{{ resultado.alertas }}</strong></li>
+  </ul>
+  {% if resultado.permutas_apagadas %}
+  {# Permuta é registro manual do gestor (regra 9): se o 'regravar' a levou,
+     ele precisa ver o que precisa refazer. Fica também na auditoria. #}
+  <p class="erro"><strong>{{ resultado.permutas_apagadas|length }}</strong>
+    permuta(s) do período foram apagadas junto com os serviços e precisam ser
+    refeitas:</p>
+  <ul>
+    {% for p in resultado.permutas_apagadas %}
+    <li>{{ p.dia }} — {{ p.escalado }} coberto por {{ p.substituto }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  <a class="botao" href="/?escala_id={{ resultado.escala.id }}&ano={{ resultado.ano }}&mes={{ resultado.mes }}">
+    Ver no calendário →</a>
+</div>
+{% endif %}
+
+<form method="post" action="/gestao/escalar" class="formulario">
+  <label>Escala
+    <select name="escala_id" required>
+      {% for e in escalas %}<option value="{{ e.id }}">{{ e.nome }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Início<input type="date" name="inicio" required></label>
+  <label>Fim<input type="date" name="fim" required></label>
+  <label class="check">
+    <input type="checkbox" name="regravar" value="1">
+    <span>regravar (apaga o período e refaz — use após lançar impedimentos;
+      <strong>as permutas do período são perdidas</strong> e precisam ser refeitas)</span>
+  </label>
+  <button type="submit">Escalar</button>
+</form>
+{% endblock %}

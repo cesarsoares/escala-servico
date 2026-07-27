@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ escala.nome }} — {{ mes_nome }}/{{ ano }}</title>
+  <link rel="stylesheet" href="/static/impressao.css">
+</head>
+<body>
+
+{# Barra de ações: só na tela — o CSS de impressão a remove. #}
+<div class="acoes">
+  <a href="/?escala_id={{ escala.id }}&ano={{ ano }}&mes={{ mes }}">← Voltar ao calendário</a>
+  <button type="button" onclick="window.print()">Imprimir / salvar em PDF</button>
+</div>
+
+<article class="documento">
+  <header>
+    <h1>Escala de serviço — {{ escala.nome }}</h1>
+    <p class="periodo">{{ mes_nome|capitalize }} de {{ ano }}</p>
+    <p class="janela">
+      Serviço das {{ '%02d:%02d'|format(escala.inicio_servico.hour, escala.inicio_servico.minute) }}
+      por {{ escala.duracao_horas }}h.
+      Folga mínima {{ escala.folga_minima_horas or 48 }}h.
+      {%- if not escala.tem_preta %} Escala somente de dias vermelhos.{% endif %}
+      {%- if not escala.tem_vermelha %} Escala somente de dias úteis.{% endif %}
+    </p>
+  </header>
+
+  {% if dias %}
+  <table>
+    <thead>
+      <tr><th class="c-dia">Dia</th><th class="c-sem">Sem</th><th class="c-cor">Cor</th>
+          {% if mostra_postos %}<th class="c-posto">Posto</th>{% endif %}<th>Militar</th></tr>
+    </thead>
+    <tbody>
+      {% for d in dias %}
+        {% for p in d.postos %}
+        <tr class="{{ 'vermelha' if d.cor == 'vermelha' else 'preta' }}{{ ' primeiro' if loop.first }}">
+          {% if loop.first %}
+            <td class="c-dia" rowspan="{{ d.postos|length }}">{{ '%02d'|format(d.dia.day) }}</td>
+            <td class="c-sem" rowspan="{{ d.postos|length }}">{{ d.semana }}</td>
+            <td class="c-cor" rowspan="{{ d.postos|length }}">
+              {{ 'V' if d.cor == 'vermelha' else 'P' }}{% if d.feriado %}*{% endif %}
+            </td>
+          {% endif %}
+          {% if mostra_postos %}<td class="c-posto">{{ p.rotulo }}</td>{% endif %}
+          <td>
+            {{ p.militar }}
+            {% if p.substituto %}<span class="permuta">permuta: {{ p.substituto }}</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p class="legenda">
+    P = dia preta (útil) · V = dia vermelha (sábado, domingo ou feriado) · * = feriado.
+    Na permuta, a folga permanece com o militar escalado (regra 9).
+  </p>
+  {% else %}
+  <p class="vazio">Nenhum serviço escalado neste mês.</p>
+  {% endif %}
+
+  <footer>
+    <p>Emitido em {{ '%02d/%02d/%04d'|format(emitido_em.day, emitido_em.month, emitido_em.year) }}
+       pelo Sistema de Escala de Serviço.</p>
+  </footer>
+</article>
+
+</body>
+</html>

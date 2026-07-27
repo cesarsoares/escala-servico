@@ -1,0 +1,130 @@
+{% extends "gestao/base_gestao.html" %}
+{% block title %}{{ 'Impedimentos de ' ~ foco.nome_guerra if foco else 'Impedimentos' }} — Gestão{% endblock %}
+{% block estilos %}<link rel="stylesheet" href="/static/graficos.css">{% endblock %}
+{% block gestao %}
+{% if foco %}
+{# Chegada pelo Efetivo: a tela vira a ficha de impedimentos daquela pessoa. #}
+<p class="sub"><a href="/gestao/militares">← Efetivo</a></p>
+<div class="linha-topo">
+  <h2>Impedimentos de {{ foco.posto_graduacao.sigla }} {{ foco.nome_guerra }}</h2>
+  <div class="acoes">
+    <a href="/gestao/militares/{{ foco.id }}">ver cadastro</a>
+    <a href="/gestao/impedimentos">ver de todos</a>
+  </div>
+</div>
+<p class="sub">{{ foco.nome_completo }} · {{ foco.om.sigla }}</p>
+{% else %}
+<h2>Impedimentos</h2>
+{% endif %}
+
+<p class="sub">Dispensa, férias, curso, operação (regra 7.5). No período, o militar é
+<strong>pulado</strong> na escala, mas mantém a vez. Para refletir num mês já fechado,
+use <em>Escalar período</em> com a opção <em>regravar</em>.</p>
+
+{% if erro %}<p class="erro">{{ erro }}</p>{% endif %}
+
+<form method="post" action="/gestao/impedimentos" class="formulario">
+  {# Guarda de quem é a tela, para voltar aqui depois de gravar. #}
+  <input type="hidden" name="contexto" value="{{ foco.id if foco else '' }}">
+  <label>Militar
+    {# Agrupado por posto/graduação: uma lista corrida de centenas de nomes é
+       impossível de varrer. #}
+    <select name="militar_id" required>
+      {% for sigla, gente in militares %}
+        <optgroup label="{{ sigla }}">
+        {% for m in gente %}
+          <option value="{{ m.id }}" {{ 'selected' if foco and m.id == foco.id }}>
+            {{ m.nome_guerra }} ({{ m.om.sigla }})</option>
+        {% endfor %}
+        </optgroup>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Tipo
+    <select name="tipo_impedimento_id" required>
+      {% for t in tipos %}<option value="{{ t.id }}">{{ t.nome }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Início<input type="date" name="inicio" required></label>
+  <label>Fim<input type="date" name="fim" required></label>
+  <label>Observação<input type="text" name="observacao" maxlength="200"></label>
+  <button type="submit">Registrar</button>
+</form>
+
+<h3>{{ 'Registrados para este militar' if foco else 'Registrados' }} ({{ impedimentos|length }})</h3>
+
+{% if linha %}
+{# Linha do tempo só do que ainda importa: em curso e futuros. Impedimento
+   encerrado não muda escalação nenhuma, e o histórico inteiro viraria mancha. #}
+<p class="tl-legenda">
+  <span><i style="background:#c98a12"></i>em curso</span>
+  <span><i style="background:#2f4a6b"></i>futuro</span>
+</p>
+<div class="timeline">
+  <div class="tl-eixo">
+    {% for rotulo, pos in linha.marcas %}<span style="left:{{ pos }}%">{{ rotulo }}</span>{% endfor %}
+  </div>
+  <div style="position:relative">
+    {% if linha.pct_hoje is not none %}
+      <div class="tl-hoje"
+           style="left:calc(210px + (100% - 210px)*{{ (linha.pct_hoje / 100)|round(3) }});top:0;bottom:6px"></div>
+    {% endif %}
+    {% for b in linha.barras %}
+      <a class="tl-row" href="/gestao/impedimentos?militar_id={{ b.impedimento.militar_id }}">
+        <div class="tl-rot">
+          <span class="mil">{{ b.militar.nome_guerra if b.militar else b.impedimento.militar_id }}</span>
+          <span class="tp">{{ b.impedimento.tipo.nome }} ·
+            {{ b.impedimento.inicio.strftime('%d/%m') }}–{{ b.impedimento.fim.strftime('%d/%m') }}</span>
+        </div>
+        <div class="tl-track">
+          <div class="tl-bar {{ b.situacao }}"
+               style="left:{{ b.left }}%;width:{{ b.width }}%">{{ 'em curso' if b.situacao == 'emcurso' else 'futuro' }}</div>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+</div>
+{% if linha.ocultos %}
+<p class="sub">{{ linha.ocultos }} impedimento(s) a mais não cabem na faixa —
+  todos continuam na tabela abaixo.</p>
+{% endif %}
+{% endif %}
+
+{% if impedimentos %}
+<table class="tabela">
+  <thead><tr>
+    {% if not foco %}<th>Militar</th>{% endif %}
+    <th>Tipo</th><th>Início</th><th>Fim</th><th>Situação</th><th>Obs.</th><th></th>
+  </tr></thead>
+  <tbody>
+  {% for i in impedimentos %}
+    {% set m = mil.get(i.militar_id) %}
+    <tr>
+      {% if not foco %}
+      <td>{{ m.nome_guerra if m else i.militar_id }}{% if m %}
+          <span class="fraco">{{ m.posto_graduacao.sigla }}</span>{% endif %}</td>
+      {% endif %}
+      <td>{{ i.tipo.nome }}</td>
+      <td>{{ i.inicio.strftime('%d/%m/%Y') }}</td>
+      <td>{{ i.fim.strftime('%d/%m/%Y') }}</td>
+      <td>
+        {# Saber se o impedimento está valendo HOJE é o que o gestor olha antes
+           de escalar; a data sozinha obriga a fazer a conta de cabeça. #}
+        {% if i.inicio <= hoje <= i.fim %}<span class="tag tag-alterar">em curso</span>
+        {% elif i.inicio > hoje %}<span class="tag">futuro</span>
+        {% else %}<span class="fraco">encerrado</span>{% endif %}
+      </td>
+      <td class="fraco">{{ i.observacao or '—' }}</td>
+      <td><form method="post" action="/gestao/impedimentos/{{ i.id }}/remover"
+               onsubmit="return confirm('Remover este impedimento?')">
+            <input type="hidden" name="contexto" value="{{ foco.id if foco else '' }}">
+            <button class="mini perigo" type="submit">remover</button></form></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="sub">{{ 'Este militar não tem impedimento registrado.' if foco
+                  else 'Nenhum impedimento registrado.' }}</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "gestao/base_gestao.html" %}
+{% block title %}Efetivo — Gestão{% endblock %}
+{% block gestao %}
+{% set rotulos = {'ativos': 'ativos', 'inativos': 'inativos', 'todos': 'todos'} %}
+<div class="linha-topo">
+  <h2>Efetivo{% if situacao != 'ativos' %} — {{ rotulos[situacao] }}{% endif %}</h2>
+  <div class="acoes">
+    <a class="botao" href="/gestao/militares/novo">+ Novo militar</a>
+  </div>
+</div>
+
+{# Três estados explícitos. Antes eram dois links que levavam à MESMA lista
+   (o "inativos=1" só desligava o filtro dos ativos). #}
+<nav class="escalas">
+  {% for chave, rotulo in [('ativos', 'Ativos'), ('inativos', 'Inativos'), ('todos', 'Todos')] %}
+    <a class="chip {{ 'ativo' if situacao == chave }}"
+       href="/gestao/militares?situacao={{ chave }}">{{ rotulo }}</a>
+  {% endfor %}
+</nav>
+
+{# Buscar é a primeira coisa que se faz aqui: são centenas de linhas e toda
+   tarefa começa por achar uma pessoa. #}
+<form method="get" action="/gestao/militares" class="formulario busca">
+  <input type="hidden" name="situacao" value="{{ situacao }}">
+  <label class="cresce">Buscar por nome
+    <input name="q" value="{{ f.q }}" autofocus autocomplete="off"
+           placeholder="nome de guerra ou nome completo"></label>
+  <label>Posto / Graduação
+    <select name="posto_graduacao_id">
+      <option value="">todos</option>
+      {% for p in postos %}
+        <option value="{{ p.id }}" {{ 'selected' if f.posto_graduacao_id == p.id|string }}>{{ p.sigla }}</option>
+      {% endfor %}
+    </select></label>
+  <label>OM
+    <select name="om_id">
+      <option value="">todas</option>
+      {% for o in oms %}
+        <option value="{{ o.id }}" {{ 'selected' if f.om_id == o.id|string }}>{{ o.sigla }}</option>
+      {% endfor %}
+    </select></label>
+  <button type="submit">Buscar</button>
+  {% if filtrando %}
+    <a href="/gestao/militares?situacao={{ situacao }}" class="limpar">limpar</a>
+  {% endif %}
+</form>
+
+<p class="sub">
+  {% if filtrando %}
+    <strong>{{ militares|length }}</strong> de {{ total }} militares {{ rotulos[situacao] }}.
+  {% else %}
+    {{ total }} militares {{ rotulos[situacao] }}.
+    Identidade e datas de antiguidade completam-se no cadastro ou pela ficha em PDF.
+  {% endif %}
+</p>
+
+{% if militares %}
+<table class="tabela">
+  <thead><tr><th>Nome de guerra</th><th>Posto/Grad</th><th>OM</th><th>Nome completo</th><th></th></tr></thead>
+  <tbody>
+  {% for m in militares %}
+    <tr class="{{ '' if m.ativo else 'inativa' }}">
+      <td><a href="/gestao/militares/{{ m.id }}">{{ m.nome_guerra }}</a></td>
+      <td>{{ m.posto_graduacao.sigla }}</td>
+      <td>{{ m.om.sigla }}</td>
+      <td class="fraco">{{ m.nome_completo if m.nome_completo != m.nome_guerra else '—' }}</td>
+      <td class="acoes-linha">
+        {% if m.ativo %}
+          {# Dispensa, férias, curso e operação são gestão DA PESSOA: o atalho
+             abre a ficha de impedimentos dela já preenchida (regra 7.5). #}
+          <a class="botao mini secundario" href="/gestao/impedimentos?militar_id={{ m.id }}">impedimentos</a>
+          <form method="post" action="/gestao/militares/{{ m.id }}/desativar"
+                onsubmit="return confirm('Desativar {{ m.nome_guerra }}? (sai da rotação; histórico preservado)')">
+            <button class="mini perigo" type="submit">desativar</button></form>
+        {% else %}
+          <form method="post" action="/gestao/militares/{{ m.id }}/reativar">
+            <button class="mini" type="submit">reativar</button></form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="vazio">Nenhum militar encontrado com esses filtros.
+  <a href="/gestao/militares?situacao=todos">ver todos</a></p>
+{% endif %}
+{% endblock %}

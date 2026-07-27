@@ -1,0 +1,134 @@
+/* ============================================================
+   Gráficos do painel — CSS/HTML puro, sem biblioteca externa.
+   Adicione este arquivo DEPOIS do style.css. Cada gráfico é um
+   link: a linha/bloco inteiro é clicável e leva à área de
+   interesse. Cor sempre acompanhada da palavra escrita.
+   As larguras (width:%) são DADO — saem do template Jinja.
+   ============================================================ */
+
+/* Legenda compacta acima de um gráfico */
+.legenda-graf { display:flex; align-items:center; gap:16px; margin:0 0 8px; font-size:12.5px; color:var(--tinta-2); flex-wrap:wrap; }
+.legenda-graf span { display:flex; align-items:center; gap:6px; }
+.legenda-graf i { width:12px; height:12px; border-radius:3px; display:inline-block; }
+
+/* Cartão que agrupa linhas clicáveis */
+.grafico-card { background:var(--papel); border:1px solid var(--borda); border-radius:var(--raio);
+                box-shadow:var(--sombra); padding:6px; margin:0 0 30px; }
+a.grafico-linha { display:block; color:inherit; text-decoration:none; padding:13px 14px; border-radius:10px; }
+a.grafico-linha:hover { background:var(--cinza); text-decoration:none; }
+.grafico-card.bloco { padding:18px 20px; }
+.grafico-card .divisor { height:1px; background:var(--linha); margin:0 12px; }
+
+.graf-topo { display:flex; justify-content:space-between; align-items:baseline; gap:12px; margin-bottom:8px; }
+.graf-topo .nome { font-weight:600; color:var(--azul); }
+.graf-nota { font-family:var(--mono); font-size:11.5px; color:var(--tinta-3); margin-top:6px; }
+
+/* Barra empilhada (cobertura, completude) */
+.barra { display:flex; height:20px; border-radius:6px; overflow:hidden; background:var(--fundo); }
+.barra > span { display:flex; align-items:center; font-size:11px; font-weight:600; color:#fff; white-space:nowrap; }
+.barra > span.ini { padding-left:8px; }
+.barra > span.fim { justify-content:flex-end; padding-right:8px; }
+.seg-coberto { background:var(--azul); }
+.seg-afechar { background:var(--vermelho); }        /* vermelho de alerta, não o da OM */
+.seg-ok { background:var(--verde); }
+.seg-falta { background:#e0a92e; }
+.graf-rodape { font-size:12px; margin-top:5px; font-weight:600; }
+.graf-rodape.alerta { color:#8a5a10; }
+.graf-rodape.ok { color:var(--verde); }
+
+/* Item de completude (rótulo + barra + faltam) */
+.graf-item { margin:12px 0; }
+.graf-item .rot { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+.graf-item .rot .campo { font-size:14px; color:var(--tinta); font-weight:500; }
+
+/* Distribuição: amplitude mín–máx (dumbbell) */
+.faixa { position:relative; height:26px; margin-bottom:4px; }
+.faixa .trilho { position:absolute; top:11px; left:0; right:0; height:4px; border-radius:2px; background:var(--fundo); }
+.faixa .amplitude { position:absolute; top:11px; height:4px; border-radius:2px; background:var(--azul); }
+.faixa .ponto { position:absolute; top:5px; width:12px; height:12px; border-radius:50%; margin-left:-6px;
+                background:#fff; border:2px solid var(--azul); }
+.faixa .ponto.cheio { background:var(--azul); }
+.faixa.alerta .amplitude { background:#e0a92e; }
+.faixa.alerta .ponto { border-color:#e0a92e; }
+.faixa.alerta .ponto.cheio { background:#e0a92e; }
+.dist-meta { display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--tinta-2); margin-bottom:10px; }
+.dist-meta b { font-family:var(--mono); color:var(--azul); }
+.dist-meta .dif { font-weight:600; }
+.dist-meta .dif.vigiar { color:#8a5a10; }
+.dist-meta .dif.equil { color:var(--verde); }
+/* Barra serviram × nunca */
+.barra-fina { display:flex; height:16px; border-radius:5px; overflow:hidden; background:var(--fundo); margin-bottom:5px; }
+.seg-serviram { background:var(--azul-claro); }
+.seg-nunca { background:#c9d2df; }
+
+
+/* ============================================================
+   Gráficos das demais telas (rodada 3)
+   ============================================================ */
+
+/* --- Linha do tempo / gantt (impedimentos 12, 13) ------------ */
+.timeline { background:var(--papel); border:1px solid var(--borda); border-radius:var(--raio);
+            box-shadow:var(--sombra); padding:14px 18px 16px; margin:0 0 18px; position:relative; }
+.tl-eixo { position:relative; height:16px; margin-left:210px; border-bottom:1px solid var(--borda); margin-bottom:2px; }
+.tl-eixo span { position:absolute; transform:translateX(-50%); font-size:11px; color:var(--tinta-3);
+                font-family:var(--mono); text-transform:uppercase; letter-spacing:.05em; top:0; }
+a.tl-row { display:grid; grid-template-columns:210px 1fr; align-items:center; gap:0;
+           padding:8px 0; border-top:1px solid var(--linha); text-decoration:none; color:inherit; }
+a.tl-row:hover .tl-track { outline:1px solid var(--borda-forte); }
+.tl-rot { font-size:13px; padding-right:14px; }
+.tl-rot .mil { font-weight:600; color:var(--azul); }
+.tl-rot .tp { color:var(--tinta-3); font-size:12px; }
+.tl-track { position:relative; height:24px; background:var(--fundo); border-radius:6px; }
+.tl-bar { position:absolute; top:4px; height:16px; border-radius:5px; display:flex; align-items:center;
+          padding:0 8px; font-size:11px; font-weight:600; color:#fff; white-space:nowrap; overflow:hidden; }
+.tl-bar.emcurso { background:#c98a12; }      /* âmbar forte — em curso */
+.tl-bar.futuro  { background:var(--azul-claro); }
+.tl-bar.passado { background:#aab2bd; }
+.tl-hoje { position:absolute; top:22px; bottom:8px; width:2px; background:var(--azul); z-index:2; }
+.tl-hoje::after { content:"hoje"; position:absolute; top:-15px; left:50%; transform:translateX(-50%);
+          font-size:9.5px; font-weight:700; letter-spacing:.05em; color:#fff; background:var(--azul);
+          border-radius:8px; padding:1px 6px; white-space:nowrap; }
+.tl-legenda { display:flex; gap:16px; flex-wrap:wrap; font-size:12.5px; color:var(--tinta-2); margin:0 0 8px; }
+.tl-legenda span { display:flex; align-items:center; gap:6px; }
+.tl-legenda i { width:12px; height:12px; border-radius:3px; display:inline-block; }
+
+/* --- Fluxo de permutas (15): faixa de dias do mês ------------ */
+.fluxo { display:flex; flex-wrap:wrap; gap:5px; background:var(--papel); border:1px solid var(--borda);
+         border-radius:var(--raio); box-shadow:var(--sombra); padding:14px 16px; margin:0 0 14px; }
+.fluxo a { width:32px; height:38px; border-radius:8px; background:var(--cinza); display:flex;
+           flex-direction:column; align-items:center; justify-content:center; text-decoration:none;
+           color:var(--tinta-3); font-family:var(--mono); font-size:12px; border:1px solid transparent; gap:2px; }
+.fluxo a:hover { border-color:var(--borda-forte); color:var(--azul); }
+.fluxo a.permutado { background:#eef4fc; color:#1c4db3; border-color:#c9dbf5; font-weight:600; }
+.fluxo a .marca-p { width:6px; height:6px; border-radius:50%; background:#1c4db3; }
+.fluxo a.vermelha { box-shadow:inset 0 -3px 0 rgba(179,38,30,.55); }  /* dia vermelho: aresta */
+
+/* --- Resumo de auditoria (17): barras por tipo/dia ----------- */
+.resumo { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:22px 36px;
+          background:var(--papel); border:1px solid var(--borda); border-radius:var(--raio);
+          box-shadow:var(--sombra); padding:18px 22px; margin:0 0 20px; }
+.resumo h4 { margin:0 0 10px; font-size:12px; text-transform:uppercase; letter-spacing:.06em;
+             color:var(--tinta-3); font-weight:700; }
+a.rz { display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit; padding:4px 0; }
+a.rz:hover .rz-lab { color:var(--azul); }
+.rz .rz-lab { width:80px; font-size:13px; color:var(--tinta); }
+.rz .rz-bar { flex:1; height:14px; background:var(--fundo); border-radius:5px; overflow:hidden; }
+.rz .rz-bar i { display:block; height:100%; border-radius:5px; }
+.rz .rz-n { font-family:var(--mono); font-size:12px; color:var(--tinta-2); width:22px; text-align:right; }
+
+/* --- Ranking da fila (09): serviços por participante --------- */
+.ranking { background:var(--papel); border:1px solid var(--borda); border-radius:var(--raio);
+           box-shadow:var(--sombra); padding:6px; margin:0 0 10px; }
+a.rk { display:grid; grid-template-columns:30px 1fr 130px 34px; align-items:center; gap:12px;
+       text-decoration:none; color:inherit; padding:9px 14px; border-radius:10px; }
+a.rk:hover { background:var(--cinza); }
+.rk .pos { font-family:var(--mono); font-size:13px; color:var(--tinta-3); }
+.rk .quem { font-weight:500; color:var(--tinta); }
+.rk .quem .g { color:var(--tinta-3); font-size:12px; }
+.rk .quem .prox { font-size:10px; font-weight:700; letter-spacing:.04em; color:var(--verde);
+                  background:var(--verde-fundo); border:1px solid var(--verde-borda);
+                  border-radius:9px; padding:0 7px; margin-left:6px; }
+.rk .rk-bar { height:14px; background:var(--fundo); border-radius:5px; overflow:hidden; }
+.rk .rk-bar i { display:block; height:100%; background:var(--azul-claro); border-radius:5px; }
+.rk.proximo .rk-bar i { background:var(--verde); }
+.rk .rk-n { font-family:var(--mono); font-size:13px; color:var(--azul); text-align:right; font-weight:600; }

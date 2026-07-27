@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Escala de Serviço — {{ om_nome }}{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+  {# Folha dos gráficos: só nas telas que têm um. Vem DEPOIS da principal,
+     porque reusa os tokens dela. #}
+  {% block estilos %}{% endblock %}
+</head>
+<body>
+  <header class="topo">
+    {# A sigla é o crachá do cabeçalho e vem da configuração: a mesma imagem
+       roda em qualquer OM, inclusive batalhão. #}
+    <h1><span class="marca">{{ om_sigla }}</span> Escala de Serviço — {{ om_nome }}</h1>
+    <nav>
+      <a href="/" class="{{ 'ativo' if not request.url.path.startswith('/gestao') }}">Consulta</a>
+      <a href="/gestao" class="{{ 'ativo' if request.url.path.startswith('/gestao') }}">Gestão</a>
+    </nav>
+  </header>
+  <main>{% block content %}{% endblock %}</main>
+  {# Rodapé: identificação do sistema, da instalação e do modo de acesso. Nada
+     de texto institucional inventado (boletim/DIEx) — o documento oficial é a
+     folha de impressão da escala, não a tela. #}
+  <footer class="rodape">
+    <div class="rodape-linha">
+      <span><strong>Escala de Serviço</strong> — {{ om_nome }}</span>
+      <span class="sep">·</span>
+      <span>versão <span class="num-mono">{{ versao }}</span></span>
+    </div>
+    <div class="rodape-linha fraco">
+      <span>Consulta aberta a todos; a gestão exige login.</span>
+      <span class="sep">·</span>
+      <span><a href="/manual">Manual de uso</a></span>
+      {% if suporte_contato %}
+        <span class="sep">·</span>
+        <span>Suporte: {{ suporte_contato }}</span>
+      {% endif %}
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,35 @@
+# Deploy padrão: UM container e um arquivo de banco (SQLite).
+#
+# Uma instalação por OM, um escritor (o gestor) e muitos leitores (a consulta é
+# aberta) — perfil em que o SQLite basta de sobra. Backup = copiar o arquivo
+# ./dados/escala.sqlite3.
+#
+# Para usar PostgreSQL:
+#     docker compose -f docker-compose.postgres.yml up --build
+services:
+  app:
+    build: .
+    # A escala é consultada o tempo todo (regra 13.1): o container tem de voltar
+    # sozinho depois de reinício do servidor ou queda do daemon. `unless-stopped`
+    # respeita a parada deliberada (`docker compose stop`).
+    restart: unless-stopped
+    environment:
+      # 4 barras = caminho absoluto dentro do container
+      DATABASE_URL: sqlite:////dados/escala.sqlite3
+      # Assina o token de sessão do gestor. HS256 exige >= 32 bytes (abaixo
+      # disso o pyjwt emite InsecureKeyLengthWarning). Em produção, defina a
+      # variável SECRET_KEY no ambiente ou num .env ao lado deste arquivo:
+      #     python -c "import secrets; print(secrets.token_urlsafe(48))"
+      SECRET_KEY: ${SECRET_KEY:-troque-esta-chave-em-producao-por-uma-de-verdade}
+      # Fuso da OM. A auditoria é gravada em UTC e a tela converte para o fuso
+      # do servidor (regra 11: "quem mexeu e quando" tem de bater com o relógio
+      # da parede). Sem isto o container roda em UTC e mostra 3h adiantado.
+      TZ: ${TZ:-America/Sao_Paulo}
+      # Identificação da OM no cabeçalho — a mesma imagem serve a qualquer OM.
+      OM_SIGLA: ${OM_SIGLA:-QG}
+      OM_NOME: ${OM_NOME:-QG do CMS}
+    ports:
+      - "8000:8000"
+    volumes:
+      # Só o banco persiste; o código vem da imagem.
+      - ./dados:/dados

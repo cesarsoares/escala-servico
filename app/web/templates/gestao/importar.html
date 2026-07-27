@@ -1,0 +1,95 @@
+{% extends "gestao/base_gestao.html" %}
+{% block title %}Importar histórico — Gestão{% endblock %}
+{% block gestao %}
+<h2>Importar histórico de serviços</h2>
+<p class="sub">Para a OM que já tem passado em planilha. Sem carregá-lo, o motor começa
+com <strong>todo mundo empatado em "nunca serviu"</strong> e a primeira escalação sai só
+pela antiguidade, ignorando quem acabou de deixar o serviço.</p>
+
+{% if erro %}<p class="erro">{{ erro }}</p>{% endif %}
+{# Mensagem própria, e não uma chave de AVISOS, porque o número de serviços
+   gravados é a informação que interessa — e AVISOS traduz texto fixo. #}
+{% if request.query_params.get('ok') == 'importacao-concluida' %}
+  <p class="sucesso" role="status">
+    <strong>{{ request.query_params.get('n', '0') }}</strong> serviço(s) gravado(s).</p>
+{% endif %}
+
+<h3>1. O arquivo</h3>
+<p class="sub">Uma linha por <strong>militar-dia</strong>. Colunas:
+  <span class="num-mono">{{ colunas|join(';') }}</span> —
+  <em>posto</em> só é necessário quando a escala tem mais de uma vaga;
+  <em>om</em> só quando há dois militares com o mesmo nome de guerra.
+  Data em <span class="num-mono">dd/mm/aaaa</span>. Separador
+  <span class="num-mono">;</span> ou <span class="num-mono">,</span>.</p>
+
+<form method="post" action="/gestao/importar" enctype="multipart/form-data"
+      class="formulario busca">
+  <label class="cresce">Arquivo .csv
+    <input type="file" name="arquivo" accept=".csv,text/csv" required></label>
+  <button type="submit">Conferir</button>
+  <a class="botao secundario" href="/gestao/importar/modelo.csv">baixar modelo</a>
+</form>
+<p class="sub">O modelo sai preenchido com os nomes reais das suas escalas e do efetivo.</p>
+
+{% if leitura %}
+<h3>2. Conferência</h3>
+<p class="sub">
+  <strong>{{ leitura.aceitas|length }}</strong> linha(s) entram
+  {%- if leitura.com_aviso %}, sendo {{ leitura.com_aviso|length }} com ressalva{% endif %};
+  <strong>{{ leitura.recusadas|length }}</strong> recusada(s). Nada foi gravado ainda.</p>
+
+{% if leitura.recusadas %}
+<h4>Recusadas</h4>
+<p class="sub">Cada uma com o número da linha no arquivo. Corrija e importe de novo —
+nada é resolvido no palpite.</p>
+<table class="tabela">
+  <thead><tr><th>Linha</th><th>Conteúdo</th><th>Motivo</th></tr></thead>
+  <tbody>
+  {% for l in leitura.recusadas[:200] %}
+    <tr>
+      <td class="num-mono">{{ l.numero }}</td>
+      <td class="fraco">{{ l.bruto.get('escala', '') }} · {{ l.bruto.get('data', '') }} ·
+        {{ l.bruto.get('militar', '') }}</td>
+      <td>{{ l.erro }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% if leitura.recusadas|length > 200 %}
+  <p class="sub">… e mais {{ leitura.recusadas|length - 200 }}.</p>
+{% endif %}
+{% endif %}
+
+{% if leitura.com_aviso %}
+<h4>Entram com ressalva</h4>
+<p class="sub">Serviço importado é <strong>fato consumado</strong>: aconteceu, ainda que
+hoje o militar não participe mais da escala. Estas linhas são gravadas e contam para a
+fila e para a folga daí em diante.</p>
+<table class="tabela">
+  <thead><tr><th>Linha</th><th>Dia</th><th>Militar</th><th>Ressalva</th></tr></thead>
+  <tbody>
+  {% for l in leitura.com_aviso[:200] %}
+    <tr>
+      <td class="num-mono">{{ l.numero }}</td>
+      <td class="num-mono">{{ l.dia.strftime('%d/%m/%Y') if l.dia }}</td>
+      <td>{{ l.bruto.get('militar', '') }}</td>
+      <td class="fraco">{{ l.avisos|join('; ') }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% if leitura.aceitas %}
+<form method="post" action="/gestao/importar/confirmar" class="formulario col"
+      onsubmit="return confirm('Gravar {{ leitura.aceitas|length }} serviço(s)?')">
+  {# O conteúdo conferido volta junto: o que se confirma é exatamente o que se
+     viu, sem estado guardado no servidor. #}
+  <input type="hidden" name="conteudo" value="{{ conteudo }}">
+  <button type="submit">Gravar {{ leitura.aceitas|length }} serviço(s)</button>
+</form>
+{% else %}
+<p class="vazio">Nenhuma linha aceita — não há o que gravar.</p>
+{% endif %}
+{% endif %}
+{% endblock %}

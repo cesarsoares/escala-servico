@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Manual de uso — Escala de Serviço — {{ om_nome }}</title>
+  {# A folha do DOCUMENTO, a mesma da escala impressa — não a do sistema. O
+     manual é feito para ser lido e impresso como papel, e misturar as duas
+     folhas só produziria conflito (ambas estilizam body, table, h1...).
+     `manual.css` acrescenta o que o texto corrido pede: índice e prosa. #}
+  <link rel="stylesheet" href="/static/impressao.css">
+  <link rel="stylesheet" href="/static/manual.css">
+</head>
+<body class="pagina-manual">
+
+{# Barra de ações: só na tela — o CSS de impressão a remove. #}
+<div class="acoes">
+  <a href="/">← Voltar</a>
+  <button type="button" onclick="window.print()">Imprimir / salvar em PDF</button>
+</div>
+
+<article class="documento manual">
+  <header>
+    <h1>Manual de uso</h1>
+    <p class="periodo">Escala de Serviço — {{ om_nome }} · versão {{ versao }}</p>
+  </header>
+
+  {% if indice %}
+  <nav class="indice">
+    <h2>Neste manual</h2>
+    {{ indice|safe }}
+  </nav>
+  {% endif %}
+
+  {# O conteúdo vem de docs/manual/manual.md, escrito e revisado no repositório
+     — não é entrada de usuário. #}
+  {{ corpo|safe }}
+
+  <footer class="rodape-doc">
+    Escala de Serviço · versão {{ versao }} · {{ om_nome }}
+    {%- if suporte_contato %} · Suporte: {{ suporte_contato }}{% endif %}
+  </footer>
+</article>
+
+</body>
+</html>

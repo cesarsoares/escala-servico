@@ -1,0 +1,79 @@
+{% extends "gestao/base_gestao.html" %}
+{% block title %}Escalas — Gestão{% endblock %}
+{% block estilos %}<link rel="stylesheet" href="/static/graficos.css">{% endblock %}
+{% block gestao %}
+<div class="linha-topo">
+  <h2>Escalas ({{ escalas|length }}{{ ' — inclui extintas' if extintas }})</h2>
+  <div class="acoes">
+    <a class="botao" href="/gestao/escalas/nova">+ Nova escala</a>
+    {% if extintas %}<a href="/gestao/escalas">ver só ativas</a>
+    {% else %}<a href="/gestao/escalas?extintas=1">ver extintas também</a>{% endif %}
+  </div>
+</div>
+<p class="sub">A escala é criada e configurada pelo gestor (regra 4): as cores em que roda,
+quantas vagas tem por dia, quem participa, com quais escalas concorre e a folga mínima.</p>
+
+{% if not extintas and cobertura %}
+<h3>Cobertura <span class="fraco">— próximos {{ horizonte }} dias · clique para ver a escala</span></h3>
+<p class="legenda-graf">
+  <span><i class="seg-coberto"></i>coberto</span>
+  <span><i class="seg-afechar"></i>a fechar</span>
+</p>
+<div class="grafico-card">
+  {% for c in cobertura %}
+    <a class="grafico-linha" href="/gestao/escalas/{{ c.escala.id }}">
+      <div class="graf-topo"><span class="nome">{{ c.escala.nome }}</span>
+        <span class="fraco">
+          {%- if c.total_na_janela %}{{ c.cobertos }} de {{ c.total_na_janela }} dias cobertos
+          {%- else %}não roda nesta janela{% endif %}</span></div>
+      <div class="barra">
+        {% if c.cobertos %}
+          <span class="seg-coberto ini" style="width:{{ c.pct_coberto }}%">{{ c.cobertos }} cobertos</span>
+        {% endif %}
+        {% if c.descobertos %}
+          <span class="seg-afechar fim" style="width:{{ 100 - c.pct_coberto }}%">{{ c.descobertos|length }} a fechar</span>
+        {% endif %}
+      </div>
+    </a>
+  {% endfor %}
+</div>
+
+<h3>Todas as escalas <span class="fraco">— configuração</span></h3>
+{% endif %}
+
+<table class="tabela">
+  <thead><tr>
+    <th>Escala</th><th>Cores</th><th>Postos</th><th>Participantes</th>
+    <th>Folga mín.</th><th>Janela</th><th>Serviços gravados</th><th></th>
+  </tr></thead>
+  <tbody>
+  {% for e in escalas %}
+    <tr class="{{ '' if e.ativa else 'inativa' }}">
+      <td><a href="/gestao/escalas/{{ e.id }}">{{ e.nome }}</a>
+        {% if not e.ativa %}<span class="tag tag-excluir">extinta</span>{% endif %}</td>
+      <td>
+        {% if e.tem_preta %}<span class="pilula pilula-preta">preta</span>{% endif %}
+        {% if e.tem_vermelha %}<span class="pilula pilula-vermelha">vermelha</span>{% endif %}
+      </td>
+      <td>{{ e.postos|length }}</td>
+      <td>{{ participantes.get(e.id, 0) }}</td>
+      <td>{{ e.folga_minima_horas ~ 'h' if e.folga_minima_horas else '48h (padrão)' }}</td>
+      <td class="fraco">{{ e.inicio_servico.strftime('%H:%M') }} · {{ e.duracao_horas }}h</td>
+      <td class="fraco">{{ servicos.get(e.id, 0) }}</td>
+      <td>
+        {% if e.ativa %}
+          <form method="post" action="/gestao/escalas/{{ e.id }}/extinguir"
+                onsubmit="return confirm('Extinguir {{ e.nome }}? Ela sai da rotação; os serviços já gravados são preservados.')">
+            <button class="mini perigo" type="submit">extinguir</button></form>
+        {% else %}
+          <form method="post" action="/gestao/escalas/{{ e.id }}/reativar">
+            <button class="mini" type="submit">reativar</button></form>
+        {% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="8" class="sub">Nenhuma escala {{ 'cadastrada' if extintas else 'ativa' }}.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "gestao/base_gestao.html" %}
+{% block title %}Calendário {{ ano }} — Gestão{% endblock %}
+{% block gestao %}
+<div class="linha-topo">
+  <h2>Calendário {{ ano }}</h2>
+  <div class="acoes">
+    <a href="/gestao/calendario?ano={{ ano - 1 }}">← {{ ano - 1 }}</a>
+    <a href="/gestao/calendario?ano={{ ano + 1 }}">{{ ano + 1 }} →</a>
+  </div>
+</div>
+<p class="sub">O que define a cor do dia (regra 5): dia útil é <strong>preta</strong>,
+sábado, domingo e feriado são <strong>vermelha</strong>. Aqui se acrescentam os
+feriados que o sistema não conhece e se força a cor de um dia específico.</p>
+{% if erro %}<p class="erro">{{ erro }}</p>{% endif %}
+
+<h3>Feriados ({{ feriados|length }})</h3>
+<p class="sub">Os nacionais já vêm cadastrados, inclusive os móveis (Carnaval, Páscoa,
+Corpus Christi). Acrescente aqui os estaduais, municipais e os pontos facultativos
+que a OM adotar.</p>
+<table class="tabela">
+  <thead><tr><th>Data</th><th>Dia da semana</th><th>Feriado</th><th>Origem</th><th></th></tr></thead>
+  <tbody>
+  {% for f in feriados %}
+    <tr>
+      <td>{{ f.data.strftime('%d/%m/%Y') }}</td>
+      {# strftime('%a') sairia no locale do sistema ("Mon") — em português, pela lista #}
+      <td class="fraco">{{ dias_semana[f.data.weekday()] }}</td>
+      <td>{{ f.nome }}</td>
+      <td>{{ 'nacional' if f.nacional else 'da OM' }}</td>
+      <td>
+        <form method="post" action="/gestao/calendario/feriados/{{ f.id }}/remover"
+              onsubmit="return confirm('Remover {{ f.nome }} de {{ f.data.strftime('%d/%m/%Y') }}? Os dias já escalados não mudam.')">
+          <button class="mini perigo" type="submit">remover</button></form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5" class="sub">Nenhum feriado em {{ ano }}.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<form method="post" action="/gestao/calendario/feriados" class="formulario">
+  <label>Data<input type="date" name="data" required></label>
+  <label>Nome<input name="nome" required maxlength="120"
+                    placeholder="ex.: Aniversário da cidade"></label>
+  <button type="submit" class="secundario">+ Acrescentar feriado</button>
+</form>
+
+<h3>Dias com cor forçada ({{ overrides|length }})</h3>
+<p class="sub">Regra 5.3: o gestor pode declarar um dia específico como vermelha — e o
+inverso também vale, para o feriado que a OM decidiu trabalhar normalmente. A
+observação fica registrada.</p>
+<table class="tabela">
+  <thead><tr><th>Data</th><th>Cor forçada</th><th>Observação</th><th></th></tr></thead>
+  <tbody>
+  {% for o in overrides %}
+    <tr>
+      <td>{{ o.data.strftime('%d/%m/%Y') }}</td>
+      <td><span class="pilula pilula-{{ o.cor.value }}">{{ o.cor.value }}</span></td>
+      <td class="fraco">{{ o.observacao or '—' }}</td>
+      <td>
+        <form method="post" action="/gestao/calendario/overrides/{{ o.data.isoformat() }}/remover"
+              onsubmit="return confirm('Remover a cor forçada de {{ o.data.strftime('%d/%m/%Y') }}? O dia volta à cor natural.')">
+          <button class="mini perigo" type="submit">remover</button></form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="4" class="sub">Nenhum dia com cor forçada em {{ ano }}.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<form method="post" action="/gestao/calendario/overrides" class="formulario">
+  <label>Data<input type="date" name="data" required></label>
+  <label>Cor
+    <select name="cor" required>
+      <option value="vermelha">vermelha — conta como fim de semana/feriado</option>
+      <option value="preta">preta — dia útil, mesmo caindo em feriado/fim de semana</option>
+    </select></label>
+  <label>Observação<input name="observacao" maxlength="200"
+                          placeholder="ex.: ponto facultativo do Estado"></label>
+  <button type="submit" class="secundario">Definir cor do dia</button>
+</form>
+{% endblock %}

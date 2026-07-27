@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Entrar — Gestão{% endblock %}
+{% block content %}
+<div class="login-box">
+  <h2>Gestão da escala</h2>
+  <p class="sub">Acesso restrito aos gestores (regra 11).</p>
+  {% if erro %}<p class="erro">{{ erro }}</p>{% endif %}
+  {# O login diferencia maiúsculas. Celular e navegador capitalizam a primeira
+     letra de campo de texto por conta própria, transformando 'brigada' em
+     'Brigada' — que é recusado. Daí o autocapitalize/autocorrect desligados. #}
+  <form method="post" action="/gestao/login">
+    <label>Login<input name="username" autofocus required
+                       autocapitalize="none" autocorrect="off" spellcheck="false"
+                       autocomplete="username"></label>
+    <label>Senha<input name="password" type="password" required
+                       autocomplete="current-password"></label>
+    <button type="submit">Entrar</button>
+  </form>
+  <p class="sub"><a href="/">← voltar à consulta</a></p>
+</div>
+{% endblock %}

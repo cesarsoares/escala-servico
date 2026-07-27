@@ -1,0 +1,28 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.db
+dados/
+
+# Dados pessoais reais — não versionar (fichas com CPF/identidade/endereço e o
+# efetivo da OM na planilha do brigada).
+fichas_exemplo/
+*.xlsx
+*.ods
+.pytest_cache/
+.mypy_cache/
+dist/
+build/
+*.egg-info/
+.DS_Store
+alembic/versions/*.pyc
+export_interface*/
+
+# Permissões do Claude Code específicas desta máquina (caminhos locais).
+# O settings.json do projeto continua versionado.
+.claude/settings.local.json

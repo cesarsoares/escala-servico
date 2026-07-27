@@ -1,0 +1,42 @@
+# O Dockerfile faz `COPY . .` — o que estiver aqui NÃO entra na imagem.
+
+# --- dados pessoais e dados reais: nunca vão para a imagem ---
+# As fichas trazem CPF, identidade, filiação, endereço e dados bancários; a
+# planilha e o banco trazem o efetivo real da OM. A imagem sai da máquina de
+# quem desenvolve para o TI da OM — os dados chegam pela carga, não embutidos.
+fichas_exemplo/
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+dados/
+*.xlsx
+*.ods
+
+# --- segredos e configuração local ---
+.env
+.env.*
+!.env.example
+
+# --- lixo de desenvolvimento ---
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.git/
+.gitignore
+.claude/
+notas.txt
+
+# --- não servem em produção ---
+tests/
+# As regras completas são material de desenvolvimento e ficam de fora, MAS o
+# manual é servido em /manual pela aplicação: sem ele a tela responde "manual
+# não encontrado nesta instalação". Excluir o conteúdo e reincluir a pasta é a
+# forma que funciona — `docs/` inteiro barra a reinclusão.
+docs/*
+!docs/manual/
+README.md
+CLAUDE.md
+docker-compose*.yml
+export_interface*/

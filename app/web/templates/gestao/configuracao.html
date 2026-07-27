@@ -1,0 +1,249 @@
+{% extends "gestao/base_gestao.html" %}
+{% block title %}Configurações — Gestão{% endblock %}
+{% block gestao %}
+<h2>Configurações</h2>
+<p class="sub">O sistema roda em <strong>qualquer OM</strong>, inclusive batalhão — uma
+instalação por OM (regra 13.2). O que identifica esta casa e as tabelas de referência
+que o Exército muda com o tempo ficam aqui, não no código.</p>
+
+{% if erro %}<p class="erro">{{ erro }}</p>{% endif %}
+{% if not identificacao.configurada %}
+<p class="alerta-caixa">Ninguém escolheu ainda <strong>a OM desta instalação</strong>.
+  Até lá, o cabeçalho mostra o que está no arquivo de configuração
+  (<span class="num-mono">{{ identificacao.sigla }}</span>).</p>
+{% endif %}
+
+<p class="sub">Instalando agora numa OM que já tem passado em planilha? Veja
+  <a href="/gestao/importar">importar o histórico de serviços</a> — sem ele o motor
+  começa com todo mundo empatado em "nunca serviu".</p>
+
+<nav class="secoes">
+  <a href="#instalacao">Instalação</a>
+  <a href="#oms">OMs <span class="conta">{{ oms|length }}</span></a>
+  <a href="#graduacoes">Postos e graduações <span class="conta">{{ graduacoes|length }}</span></a>
+  <a href="#tipos">Tipos de impedimento <span class="conta">{{ tipos|length }}</span></a>
+  <a href="#gestores">Gestores <span class="conta">{{ gestores|length }}</span></a>
+</nav>
+
+{# --- 1. instalação -------------------------------------------------------- #}
+<h3 id="instalacao">Esta instalação</h3>
+<form method="post" action="/gestao/configuracao/instalacao" class="formulario col">
+  <div class="grade2">
+    <label>OM desta instalação
+      <select name="om_id">
+        <option value="">— não definida —</option>
+        {% for o in oms %}
+          <option value="{{ o.id }}" {{ 'selected' if o.propria }}>{{ o.sigla }} — {{ o.nome }}</option>
+        {% endfor %}
+      </select>
+      <span class="fraco">aparece no cabeçalho e no rodapé de todas as telas</span></label>
+    <label>Contato do suporte local
+      <input name="suporte_contato" value="{{ suporte_contato }}" maxlength="200"
+             placeholder="ex.: Seção de TI — ramal 1234">
+      <span class="fraco">vai no rodapé; é o que falta quando algo dá errado</span></label>
+  </div>
+  <button type="submit">Salvar</button>
+</form>
+<p class="sub">A OM da casa precisa estar cadastrada na lista abaixo. Se ela ainda não
+está, cadastre-a primeiro e depois volte aqui.</p>
+
+{# --- 2. OMs --------------------------------------------------------------- #}
+<h3 id="oms">Organizações Militares</h3>
+<p class="sub">Além da OM da casa, entram aqui as OMs <strong>de origem</strong> de quem
+serve nesta escala — num QG, o efetivo vem de várias (regra 3.2).</p>
+
+<form method="post" action="/gestao/configuracao/oms" class="formulario busca">
+  <label class="cresce">Nome
+    <input name="nome" required maxlength="120" placeholder="Comando Militar do Sul"></label>
+  <label>Sigla
+    <input name="sigla" required maxlength="30" placeholder="Cmdo CMS"></label>
+  <button type="submit">Cadastrar OM</button>
+</form>
+
+<table class="tabela">
+  <thead><tr><th>Sigla</th><th>Nome</th><th>Militares</th><th></th></tr></thead>
+  <tbody>
+  {% for o in oms %}
+    <tr>
+      <td>{{ o.sigla }}
+        {% if o.propria %}<span class="tag tag-escalar">esta instalação</span>{% endif %}</td>
+      <td>
+        <form method="post" action="/gestao/configuracao/oms/{{ o.id }}" class="inline">
+          <input name="nome" value="{{ o.nome }}" required maxlength="120">
+          <input name="sigla" value="{{ o.sigla }}" required maxlength="30" size="12">
+          <button class="mini secundario" type="submit">salvar</button>
+        </form>
+      </td>
+      <td class="num-mono">{{ militares_por_om.get(o.id, 0) }}</td>
+      <td class="acoes-linha">
+        {% if not o.propria and not militares_por_om.get(o.id, 0) %}
+          <form method="post" action="/gestao/configuracao/oms/{{ o.id }}/excluir"
+                onsubmit="return confirm('Excluir a OM {{ o.sigla }}?')">
+            <button class="mini perigo" type="submit">excluir</button></form>
+        {% else %}
+          <span class="fraco">—</span>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{# --- 3. postos e graduações ------------------------------------------------ #}
+<h3 id="graduacoes">Postos e graduações</h3>
+<p class="sub">A tabela nasce com a escala hierárquica da <strong>Lei 6.880/80, art. 16</strong>.
+Mexer na <strong>ordem</strong> muda o desempate da fila (regra 9.1) daqui em diante —
+os serviços já gravados não mudam. Do mais antigo (topo) ao mais moderno.</p>
+
+<form method="post" action="/gestao/configuracao/graduacoes" class="formulario busca">
+  <label>Sigla
+    <input name="sigla" required maxlength="12" placeholder="3º Sgt" size="10"></label>
+  <label class="cresce">Nome
+    <input name="nome" required maxlength="60" placeholder="Terceiro-Sargento"></label>
+  <label>Círculo
+    <select name="circulo_id" required>
+      {% for c in circulos %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
+    </select></label>
+  <label>Abaixo de
+    <select name="abaixo_de_id">
+      <option value="">— no topo —</option>
+      {% for g in graduacoes %}<option value="{{ g.id }}">{{ g.sigla }}</option>{% endfor %}
+    </select></label>
+  <button type="submit">Acrescentar</button>
+</form>
+
+<table class="tabela">
+  <thead><tr><th>Sigla</th><th>Nome</th><th>Círculo</th><th>Militares</th>
+             <th>Ordem</th><th></th></tr></thead>
+  <tbody>
+  {% for g in graduacoes %}
+    <tr class="{{ '' if g.ativo else 'inativa' }}">
+      <td>{{ g.sigla }}
+        {% if not g.ativo %}<span class="tag">desativado</span>{% endif %}
+        {% if g.circulo.eh_praca %}<span class="tag" title="desempate pelo número de antiguidade (regra 9.5)">praça</span>{% endif %}</td>
+      <td>
+        <form method="post" action="/gestao/configuracao/graduacoes/{{ g.id }}" class="inline">
+          <input name="sigla" value="{{ g.sigla }}" required maxlength="12" size="8">
+          <input name="nome" value="{{ g.nome }}" required maxlength="60">
+          <select name="circulo_id">
+            {% for c in circulos %}
+              <option value="{{ c.id }}" {{ 'selected' if c.id == g.circulo_id }}>{{ c.nome }}</option>
+            {% endfor %}
+          </select>
+          <button class="mini secundario" type="submit">salvar</button>
+        </form>
+      </td>
+      <td class="fraco">{{ g.circulo.nome }}</td>
+      <td class="num-mono">{{ militares_por_graduacao.get(g.id, 0) }}</td>
+      <td class="num-mono fraco">{{ g.ordem_hierarquica }}</td>
+      <td class="acoes-linha">
+        <form method="post" action="/gestao/configuracao/graduacoes/{{ g.id }}/mover">
+          <input type="hidden" name="direcao" value="subir">
+          <button class="mini secundario" type="submit" title="mais antigo">↑</button></form>
+        <form method="post" action="/gestao/configuracao/graduacoes/{{ g.id }}/mover">
+          <input type="hidden" name="direcao" value="descer">
+          <button class="mini secundario" type="submit" title="mais moderno">↓</button></form>
+        <form method="post" action="/gestao/configuracao/graduacoes/{{ g.id }}/situacao">
+          <input type="hidden" name="ativo" value="{{ '0' if g.ativo else '1' }}">
+          <button class="mini secundario" type="submit">{{ 'desativar' if g.ativo else 'ativar' }}</button></form>
+        {% if not militares_por_graduacao.get(g.id, 0) %}
+          <form method="post" action="/gestao/configuracao/graduacoes/{{ g.id }}/excluir"
+                onsubmit="return confirm('Excluir {{ g.sigla }}?')">
+            <button class="mini perigo" type="submit">excluir</button></form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="sub">Graduação que alguém já tem <strong>não pode ser excluída</strong> — apagá-la
+levaria junto o cadastro e o histórico dessas pessoas. O caminho é <em>desativar</em>:
+ela some dos formulários e quem já a tem continua como está.</p>
+
+{# --- 4. tipos de impedimento ---------------------------------------------- #}
+<h3 id="tipos">Tipos de impedimento</h3>
+<p class="sub">Dispensa, férias, curso, operação... (regra 7.5). Varia de OM para OM.</p>
+
+<form method="post" action="/gestao/configuracao/tipos" class="formulario busca">
+  <label class="cresce">Nome
+    <input name="nome" required maxlength="60" placeholder="Missão"></label>
+  <button type="submit">Acrescentar</button>
+</form>
+
+<table class="tabela">
+  <thead><tr><th>Tipo</th><th>Em uso</th><th></th></tr></thead>
+  <tbody>
+  {% for t in tipos %}
+    <tr class="{{ '' if t.ativo else 'inativa' }}">
+      <td>{{ t.nome }}
+        {% if not t.ativo %}<span class="tag">desativado</span>{% endif %}</td>
+      <td class="num-mono">{{ impedimentos_por_tipo.get(t.id, 0) }}</td>
+      <td class="acoes-linha">
+        <form method="post" action="/gestao/configuracao/tipos/{{ t.id }}/situacao">
+          <input type="hidden" name="ativo" value="{{ '0' if t.ativo else '1' }}">
+          <button class="mini secundario" type="submit">{{ 'desativar' if t.ativo else 'ativar' }}</button></form>
+        {% if not impedimentos_por_tipo.get(t.id, 0) %}
+          <form method="post" action="/gestao/configuracao/tipos/{{ t.id }}/excluir"
+                onsubmit="return confirm('Excluir o tipo {{ t.nome }}?')">
+            <button class="mini perigo" type="submit">excluir</button></form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{# --- 5. gestores ---------------------------------------------------------- #}
+<h3 id="gestores">Gestores</h3>
+<p class="sub">Quem entra em <strong>/gestao</strong> (regra 11). A consulta continua aberta
+a todos, sem login (regra 13.1). Toda alteração fica no
+<a href="/gestao/auditoria">histórico</a>, com o nome de quem fez.</p>
+
+<form method="post" action="/gestao/configuracao/gestores" class="formulario busca">
+  <label>Login
+    <input name="login" required maxlength="60" placeholder="sgt.silva" autocomplete="off"></label>
+  <label class="cresce">Nome
+    <input name="nome" required maxlength="120" placeholder="Sgt Silva"></label>
+  <label>Senha
+    <input type="password" name="senha" required minlength="8" autocomplete="new-password"></label>
+  <label>Repita
+    <input type="password" name="senha2" required minlength="8" autocomplete="new-password"></label>
+  <button type="submit">Cadastrar gestor</button>
+</form>
+
+<table class="tabela">
+  <thead><tr><th>Login</th><th>Nome</th><th>Situação</th><th>Trocar a senha</th><th></th></tr></thead>
+  <tbody>
+  {% for u in gestores %}
+    <tr class="{{ '' if u.ativo else 'inativa' }}">
+      <td>{{ u.login }}{% if u.id == gestor.id %} <span class="tag tag-escalar">você</span>{% endif %}</td>
+      <td>{{ u.nome }}</td>
+      <td>{{ 'ativo' if u.ativo else 'desativado' }}</td>
+      <td>
+        <form method="post" action="/gestao/configuracao/gestores/{{ u.id }}/senha" class="inline">
+          <input type="password" name="senha" required minlength="8" placeholder="nova senha"
+                 autocomplete="new-password">
+          <input type="password" name="senha2" required minlength="8" placeholder="repita"
+                 autocomplete="new-password">
+          <button class="mini secundario" type="submit">trocar</button>
+        </form>
+      </td>
+      <td class="acoes-linha">
+        <form method="post" action="/gestao/configuracao/gestores/{{ u.id }}/situacao">
+          <input type="hidden" name="ativo" value="{{ '0' if u.ativo else '1' }}">
+          <button class="mini {{ 'perigo' if u.ativo else 'secundario' }}" type="submit">
+            {{ 'desativar' if u.ativo else 'reativar' }}</button></form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="sub">Gestor <strong>não se exclui</strong>: o histórico aponta para ele e perderia
+o nome de quem fez cada alteração. Desativar tira o acesso e preserva o registro.</p>
+
+{% if foco %}
+{# Erro de validação recarrega a página inteira; sem isto, o gestor volta ao
+   topo e tem de procurar de novo a seção em que estava. #}
+<script>location.hash = {{ foco|tojson }};</script>
+{% endif %}
+{% endblock %}

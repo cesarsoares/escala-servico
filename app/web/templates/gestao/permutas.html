@@ -1,0 +1,83 @@
+{% extends "gestao/base_gestao.html" %}
+{% block title %}Permutas — Gestão{% endblock %}
+{% block estilos %}<link rel="stylesheet" href="/static/graficos.css">{% endblock %}
+{% block gestao %}
+<h2>Permutas</h2>
+<p class="sub">Troca é <strong>registro puro</strong> (regra 9): anota quem cobriu o
+serviço. A folga continua sendo de quem estava escalado — não há retribuição
+automática nem recálculo. A troca é <strong>negada</strong> se ferir a folga mínima
+de quem vai cobrir.</p>
+
+{% if erro %}<p class="erro">{{ erro }}</p>{% endif %}
+
+{% if not escalas %}
+  <p class="sub">Nenhuma escala cadastrada.</p>
+{% else %}
+<nav class="escalas">
+  {% for e in escalas %}
+    <a href="/gestao/permutas?escala_id={{ e.id }}&ano={{ ano }}&mes={{ mes }}"
+       class="chip {{ 'ativo' if e.id == escala.id }}">{{ e.nome }}</a>
+  {% endfor %}
+</nav>
+
+<div class="mes-nav">
+  <a class="seta" href="/gestao/permutas?escala_id={{ escala.id }}&ano={{ prev[0] }}&mes={{ prev[1] }}">&larr;</a>
+  <h2>{{ mes_nome|capitalize }} / {{ ano }}</h2>
+  <a class="seta" href="/gestao/permutas?escala_id={{ escala.id }}&ano={{ prox[0] }}&mes={{ prox[1] }}">&rarr;</a>
+</div>
+
+{% if servicos %}
+{# Fluxo do mês: um quadradinho por dia COM serviço. Dá para ver de relance
+   quanta coisa foi coberta e onde caem os dias vermelhos. #}
+<p class="sub">Fluxo do mês — <strong>{{ permutas|length }}</strong> de {{ servicos|length }}
+  dia(s) com permuta. Clique num dia para registrar ou cancelar.</p>
+<div class="fluxo">
+  {% for s in servicos %}
+    <a class="{{ 'permutado' if permutas.get(s.id) }} {{ 'vermelha' if s.cor.value == 'vermelha' }}"
+       href="/gestao/permutas/servico/{{ s.id }}"
+       title="{{ s.dia.strftime('%d/%m') }} — {{ s.militar.nome_guerra }}{% if permutas.get(s.id) %} (permutado){% endif %}">
+      {{ '%02d'|format(s.dia.day) }}
+      {%- if permutas.get(s.id) %}<span class="marca-p"></span>{% endif %}</a>
+  {% endfor %}
+</div>
+
+<table class="tabela">
+  <thead><tr><th>Dia</th><th>Cor</th><th>Escalado</th><th>Cobertura</th><th></th></tr></thead>
+  <tbody>
+  {% for s in servicos %}
+    {% set p = permutas.get(s.id) %}
+    <tr class="{{ 'permutado' if p }}">
+      {# strftime('%a') sairia no locale do sistema (Sat/Mon) — em português, pela lista #}
+      <td>{{ s.dia.strftime('%d/%m') }} <span class="fraco">{{ dias_semana[s.dia.weekday()] }}</span></td>
+      <td><span class="tag cor-{{ s.cor.value }}">{{ s.cor.value }}</span></td>
+      <td>{{ s.militar.nome_guerra }} <span class="fraco">{{ s.militar.posto_graduacao.sigla }}</span></td>
+      <td>
+        {% if p %}
+          {% set sub = subs.get(p.militar_substituto_id) %}
+          coberto por <strong>{{ sub.nome_guerra if sub else p.militar_substituto_id }}</strong>
+          {%- if sub %} <span class="fraco">{{ sub.posto_graduacao.sigla }}</span>{% endif %}
+          {% if p.observacao %}<span class="fraco">— {{ p.observacao }}</span>{% endif %}
+        {% else %}
+          <span class="fraco">—</span>
+        {% endif %}
+      </td>
+      <td>
+        {% if p %}
+          <form method="post" action="/gestao/permutas/servico/{{ s.id }}/cancelar"
+                onsubmit="return confirm('Cancelar esta permuta? O escalado volta a figurar.')">
+            <button class="mini perigo" type="submit">cancelar</button></form>
+        {% else %}
+          {# secundário como as outras ações de linha do sistema (impedimentos,
+             regravar): fundo claro e letra azul. #}
+          <a class="botao mini secundario" href="/gestao/permutas/servico/{{ s.id }}">permutar</a>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="sub">Nenhum serviço escalado neste mês. Use <em>Escalar período</em> primeiro.</p>
+{% endif %}
+{% endif %}
+{% endblock %}

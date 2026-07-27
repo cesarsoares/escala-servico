@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest tests/test_calendario_impedimento_gestao.py -q -W ignore::DeprecationWarning)",
+      "Bash(python -m pytest tests/test_acoes_gestao.py -q -W ignore::DeprecationWarning)",
+      "Bash(python -m pytest tests/test_auditoria_gestao.py -q -W ignore::DeprecationWarning)",
+      "Bash(python -m pytest tests/test_review_fixes.py -q -W ignore::DeprecationWarning)",
+      "Bash(python -c \"import openpyxl; print\\('openpyxl', openpyxl.__version__\\)\")",
+      "Bash(python -c \"import pandas; print\\('pandas', pandas.__version__\\)\")",
+      "Bash(pip install *)",
+      "Bash(python -c ' *)",
+      "Bash(PYTHONIOENCODING=utf-8 timeout 60 python -c ' *)",
+      "Bash(python -m pytest tests/test_manual.py -q)",
+      "Bash(python -m alembic current)",
+      "Bash(python -m tools.exportar_interface \"C:/Users/cesar/AppData/Local/Temp/claude/c--Users-cesar-OneDrive-Documentos-projetos-escala/9fbfa581-3529-44c1-8afc-0ec33252d2e7/scratchpad/export\")",
+      "Bash(python -m tools.exportar_interface \"C:/Users/cesar/AppData/Local/Temp/claude/c--Users-cesar-OneDrive-Documentos-projetos-escala/9fbfa581-3529-44c1-8afc-0ec33252d2e7/scratchpad/export2\")",
+      "Bash(git --version)",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ]
+  }
+}

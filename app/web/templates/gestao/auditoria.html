@@ -1,0 +1,119 @@
+{% extends "gestao/base_gestao.html" %}
+{% block title %}Histórico — Gestão{% endblock %}
+{% block estilos %}<link rel="stylesheet" href="/static/graficos.css">{% endblock %}
+{% block gestao %}
+<h2>Histórico de alterações</h2>
+<p class="sub">Toda alteração manual fica registrada (regra 11): quem fez, quando, em
+que registro e o que mudou. É só leitura — consultar não altera nem gera registro
+novo. Os horários estão no fuso deste servidor.</p>
+
+<form method="get" action="/gestao/auditoria" class="formulario">
+  <label>Entidade
+    <select name="entidade">
+      <option value="">todas</option>
+      {% for e in entidades %}
+        <option value="{{ e }}" {{ 'selected' if f.entidade == e }}>{{ e }}</option>
+      {% endfor %}
+    </select></label>
+  <label>Ação
+    <select name="acao">
+      <option value="">todas</option>
+      {% for a in acoes %}
+        <option value="{{ a }}" {{ 'selected' if f.acao == a }}>{{ a }}</option>
+      {% endfor %}
+    </select></label>
+  <label>Gestor
+    <select name="usuario_id">
+      <option value="">todos</option>
+      {% for u in usuarios %}
+        <option value="{{ u.id }}" {{ 'selected' if f.usuario_id == u.id|string }}>{{ u.nome }}</option>
+      {% endfor %}
+    </select></label>
+  <label>De<input type="date" name="desde" value="{{ f.desde }}"></label>
+  <label>Até<input type="date" name="ate" value="{{ f.ate }}"></label>
+  <button type="submit">Filtrar</button>
+  <a href="/gestao/auditoria" class="limpar">limpar filtros</a>
+</form>
+
+{% if por_acao or por_entidade %}
+{# Resumo do histórico INTEIRO, não da página: diz onde procurar antes de
+   filtrar. Cada barra é o próprio filtro. #}
+<div class="resumo">
+  <div>
+    <h4>Por ação</h4>
+    {% for r in por_acao %}
+      <a class="rz" href="/gestao/auditoria?acao={{ r.rotulo }}">
+        <span class="rz-lab">{{ r.rotulo }}</span>
+        <span class="rz-bar"><i style="width:{{ r.pct }}%"></i></span>
+        <span class="rz-n">{{ r.n }}</span></a>
+    {% endfor %}
+  </div>
+  <div>
+    <h4>Por entidade</h4>
+    {% for r in por_entidade %}
+      <a class="rz" href="/gestao/auditoria?entidade={{ r.rotulo }}">
+        <span class="rz-lab">{{ r.rotulo }}</span>
+        <span class="rz-bar"><i style="width:{{ r.pct }}%"></i></span>
+        <span class="rz-n">{{ r.n }}</span></a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if linhas %}
+<table class="tabela">
+  <thead><tr>
+    <th>Quando</th><th>Gestor</th><th>Ação</th><th>Registro</th><th>O que mudou</th>
+  </tr></thead>
+  <tbody>
+  {% for l in linhas %}
+    {% set r = l.registro %}
+    <tr>
+      <td>{{ r.criado_em|hora_local }}</td>
+      <td>{{ l.quem or '—' }}</td>
+      <td><span class="tag tag-{{ r.acao }}">{{ r.acao }}</span></td>
+      <td>{{ r.entidade }}{% if r.entidade_id is not none %}
+          <span class="fraco">#{{ r.entidade_id }}</span>{% endif %}</td>
+      <td>
+        {% if l.mudancas %}
+          {# Só os campos que mudaram: comparar dois JSON de 12 campos a olho é
+             o que fazia esta tela não existir. #}
+          <ul class="mudancas">
+          {% for campo, de, para in l.mudancas %}
+            <li><span class="campo">{{ campo }}</span>
+              <span class="de">{{ de if de is not none else '—' }}</span> →
+              <strong>{{ para if para is not none else '—' }}</strong></li>
+          {% endfor %}
+          </ul>
+        {% elif r.dados_depois or r.dados_antes %}
+          {# criar/excluir: um dos lados não existe, então mostra o retrato. #}
+          <details>
+            <summary>{{ 'estado gravado' if r.acao == 'criar' else 'estado anterior' }}</summary>
+            <dl class="retrato">
+            {% for campo, valor in (r.dados_depois or r.dados_antes).items() %}
+              <dt>{{ campo }}</dt><dd>{{ valor if valor is not none else '—' }}</dd>
+            {% endfor %}
+            </dl>
+          </details>
+        {% else %}
+          <span class="fraco">—</span>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<div class="paginacao">
+  {% if pagina > 1 %}
+    <a class="botao mini" href="/gestao/auditoria?pagina={{ pagina - 1 }}{{ querystring }}">← anteriores</a>
+  {% endif %}
+  <span class="sub">página {{ pagina }}</span>
+  {% if tem_proxima %}
+    <a class="botao mini" href="/gestao/auditoria?pagina={{ pagina + 1 }}{{ querystring }}">seguintes →</a>
+  {% endif %}
+</div>
+{% else %}
+<p class="sub">Nenhuma alteração registrada{{ ' com esses filtros' if f.entidade or f.acao or f.usuario_id or f.desde or f.ate }}.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "gestao/base_gestao.html" %}
+{% block title %}Nova escala — Gestão{% endblock %}
+{% block gestao %}
+<p class="sub"><a href="/gestao/escalas">← Escalas</a></p>
+<h2>Nova escala</h2>
+{% if erro %}<p class="erro">{{ erro }}</p>{% endif %}
+
+<form method="post" action="/gestao/escalas" class="formulario col">
+  <div class="grade2">
+    <label>Nome *
+      <input name="nome" value="{{ v.get('nome','') }}" required maxlength="120"
+             placeholder="ex.: Oficial de Dia ao QG"></label>
+    <label>Nº de postos (vagas por dia) *
+      <input type="number" name="postos" min="1" max="60" required
+             value="{{ v.get('postos', 1) }}"></label>
+    <label>Folga mínima (horas)
+      <input type="number" name="folga_minima_horas" min="24"
+             value="{{ v.get('folga_minima_horas','') }}" placeholder="48">
+      <span class="fraco">em branco = 48h; nunca menos de 24h (regra 7.2.1)</span></label>
+    <label>Início do serviço *
+      <input type="time" name="inicio_servico" required
+             value="{{ v.get('inicio_servico','08:00') }}"></label>
+    <label>Duração (horas) *
+      <input type="number" name="duracao_horas" min="1" required
+             value="{{ v.get('duracao_horas', 24) }}">
+      <span class="fraco">24h = serviço de um dia; 14h cobre um plantão 18:00→08:00</span></label>
+  </div>
+
+  <fieldset class="cores">
+    <legend>Em que dias esta escala roda? (regra 4.5)</legend>
+    <label class="check"><input type="checkbox" name="tem_preta" value="1"
+      {{ 'checked' if v.get('tem_preta') }}><span>preta — dias úteis</span></label>
+    <label class="check"><input type="checkbox" name="tem_vermelha" value="1"
+      {{ 'checked' if v.get('tem_vermelha') }}><span>vermelha — sábados, domingos e feriados</span></label>
+  </fieldset>
+
+  <button type="submit">Criar escala</button>
+</form>
+<p class="sub">* obrigatório. Participantes e escalas concorrentes são definidos na
+tela da escala, depois de criada.</p>
+{% endblock %}

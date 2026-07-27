@@ -1,0 +1,466 @@
+/* Escala de Serviço — folha de estilo (linguagem visual "1c / Claro").
+   Reescrita da folha original mantendo TODOS os nomes de classe: troque só
+   este arquivo e as 17 telas mudam de cara sem tocar na marcação nem no Jinja.
+
+   Regras que NÃO são estéticas e foram preservadas:
+   1. impressao.css é outra folha (tela 02) e nada aqui a afeta.
+   2. A cor da ESCALA VERMELHA é da OM: --vermelha-escala:#ff0000. Não muda.
+   3. Cor nunca é a única informação: estado, cor da escala e alerta continuam
+      vindo com a palavra escrita ao lado (tags, pílulas, legenda, cabeçalhos).
+   4. Densidade média (tabelas de até 139 linhas) — só um pouco mais de respiro.
+   5. Sem dependência externa: fonte de sistema, nada de CDN/fonte remota. */
+
+:root {
+  /* Tinta */
+  --tinta:#1b1f24;
+  --tinta-2:#4a5460;
+  --tinta-3:#8a94a4;
+  /* Superfícies e traços */
+  --fundo:#eef1f6;            /* fundo da página, azulado frio */
+  --papel:#ffffff;            /* cartões, tabelas, formulários */
+  --cinza:#f6f8fb;            /* cabeçalho de tabela, célula útil */
+  --cinza-2:#eaeef4;          /* dia de outro mês */
+  /* Tabelas: zebra e hover são TONS DO AZUL institucional, nunca cinza. Cinza
+     de hover se confundia com a faixa par e com a célula de dia útil. A ordem
+     de força é zebra < estado da linha < hover (ver "tabelas"). */
+  --zebra:#f3f7fc;            /* faixa par */
+  --hover-linha:#e4edf9;      /* linha sob o cursor */
+  --borda:#dde3ec;
+  --borda-forte:#c6ccd5;
+  --linha:#f0f2f6;            /* divisórias internas de tabela, mais leves */
+  /* Institucional */
+  --azul:#1c2a3a;             /* marca, títulos, botão primário, aba ativa */
+  --azul-claro:#2f4a6b;       /* hover do primário, anel de foco */
+  --link:#1b4b8f;
+  /* Cor da ESCALA VERMELHA — OM, CMYK 0/100/100/0. Só no dia do calendário. */
+  --vermelha-escala:#ff0000;
+  /* Semânticas (alerta/erro usam o vermelho mais escuro, nunca o da escala) */
+  --vermelho:#b3261e;
+  --vermelho-fundo:#fdecea;
+  --vermelho-borda:#f3c7c2;
+  --ambar:#7a5a10;
+  --ambar-fundo:#fff8e1;
+  --ambar-borda:#f0d99b;
+  --verde:#1e7e34;
+  --verde-fundo:#e8f5ea;
+  --verde-borda:#bfe2c6;
+  /* Forma — cantos mais arredondados que a folha antiga */
+  --raio:14px;
+  --raio-p:10px;
+  --pill:22px;
+  --sombra:0 1px 3px rgba(30,42,58,.07);
+  --sombra-2:0 8px 24px rgba(30,42,58,.10);
+  /* Números tabulares e horários: fonte mono de sistema, sem download */
+  --mono: ui-monospace, "SF Mono", "Segoe UI Mono", Menlo, Consolas, monospace;
+}
+
+* { box-sizing:border-box; }
+
+html { -webkit-text-size-adjust:100%; }
+
+body {
+  margin:0;
+  font-family:system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size:15px;
+  line-height:1.55;
+  color:var(--tinta);
+  background:var(--fundo);
+  -webkit-font-smoothing:antialiased;
+}
+
+h1, h2, h3 { line-height:1.25; letter-spacing:-.012em; }
+h2 { font-size:22px; margin:0 0 4px; color:var(--azul); font-weight:700; }
+h3 { font-size:16px; margin:28px 0 12px; color:var(--azul); font-weight:700; }
+a { color:var(--link); }
+
+/* Anel de foco — requisito de acessibilidade. Nunca remover sem substituir. */
+:focus-visible { outline:2px solid var(--azul-claro); outline-offset:2px; border-radius:3px; }
+
+/* --- moldura: barra superior clara com marca "QG" ---------------------------- */
+.topo { background:var(--papel); color:var(--tinta); padding:13px 26px;
+        display:flex; align-items:center; justify-content:space-between; gap:16px;
+        flex-wrap:wrap; box-shadow:0 1px 0 #e6eaf1; position:sticky; top:0; z-index:20; }
+.topo h1 { font-size:16px; margin:0; font-weight:600; color:var(--azul);
+           letter-spacing:.005em; display:flex; align-items:center; gap:11px; }
+/* Crachá da OM. O texto vem do TEMPLATE (config `om_sigla`), não daqui: a mesma
+   imagem roda em qualquer OM e sigla não é conteúdo de folha de estilo. */
+.topo h1 .marca { display:inline-flex; align-items:center; justify-content:center;
+           background:var(--azul); color:#fff; font-weight:700; font-size:12px;
+           letter-spacing:.02em; padding:4px 9px; border-radius:8px; }
+.topo nav { display:flex; align-items:center; gap:6px; font-size:13.5px; }
+.topo nav a { color:var(--tinta-2); text-decoration:none; padding:6px 14px;
+              border-radius:var(--pill); transition:background .12s, color .12s; }
+.topo nav a:hover { color:var(--azul); background:var(--cinza); }
+.topo nav a.ativo { color:#fff; background:var(--azul); }
+
+main { max-width:1060px; margin:26px auto 48px; padding:0 26px; }
+.rodape { text-align:center; color:var(--tinta-2); font-size:12px; padding:22px 20px 32px;
+          border-top:1px solid var(--borda); margin-top:36px; }
+.rodape-linha { display:flex; justify-content:center; align-items:center; gap:8px;
+                flex-wrap:wrap; line-height:1.9; }
+.rodape-linha.fraco { color:var(--tinta-3); }
+.rodape .sep { color:var(--tinta-3); }
+.rodape a { color:var(--link); text-decoration:none; }
+.rodape a:hover { text-decoration:underline; }
+.num-mono { font-family:var(--mono); }
+code { background:#e7ebf1; padding:1px 6px; border-radius:5px; font-size:.9em; font-family:var(--mono); }
+
+.aviso { border:1px solid var(--borda); background:var(--papel); box-shadow:var(--sombra);
+         border-radius:var(--raio); padding:22px 26px; }
+.aviso h2 { margin-top:0; }
+
+.sub { color:var(--tinta-3); font-size:13px; }
+p.sub { margin:4px 0 16px; max-width:74ch; line-height:1.6; }
+
+/* --- consulta: seletor de escalas e navegação de mês ------------------------ */
+.escalas { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
+.chip { padding:8px 16px; border:1px solid var(--borda); border-radius:var(--pill);
+        background:var(--papel); color:var(--tinta-2); text-decoration:none; font-size:13.5px;
+        box-shadow:var(--sombra); transition:border-color .12s, background .12s, color .12s; }
+.chip:hover { border-color:var(--borda-forte); background:var(--cinza); color:var(--azul); }
+.chip.ativo { background:var(--azul); color:#fff; border-color:var(--azul);
+              box-shadow:0 2px 7px rgba(28,42,58,.24); }
+
+.mes-nav { display:flex; align-items:center; justify-content:center; gap:16px;
+           margin:8px 0 18px; flex-wrap:wrap; }
+.mes-nav h2 { margin:0; font-size:21px; min-width:200px; text-align:center; color:var(--azul); }
+.seta { text-decoration:none; color:var(--azul); font-size:17px; line-height:1;
+        width:38px; height:38px; display:inline-flex; align-items:center; justify-content:center;
+        border:1px solid var(--borda); border-radius:50%;
+        background:var(--papel); box-shadow:var(--sombra); transition:background .12s; }
+.seta:hover { background:var(--cinza); border-color:var(--borda-forte); }
+.mes-nav .imprimir { font-size:13px; padding:9px 16px; text-decoration:none; border-radius:var(--pill); }
+
+/* --- consulta: o calendário em blocos (tiled) -------------------------------
+   Página mais vista do sistema. Cada dia é um bloco arredondado, com respiro
+   entre eles; fim de semana/feriado no vermelho puro da OM. */
+.calendario { width:100%; border-collapse:separate; border-spacing:6px;
+              table-layout:fixed; background:transparent; border:none; border-radius:0;
+              box-shadow:none; overflow:visible; }
+.calendario th { font-size:11px; text-transform:uppercase; letter-spacing:.07em;
+                 color:var(--tinta-3); padding:2px 6px 10px; text-align:left;
+                 background:transparent; border:none; }
+/* Sábado e domingo em vermelho já no cabeçalho — reforço textual da cor. */
+.calendario thead th:first-child, .calendario thead th:last-child { color:var(--vermelho); }
+.calendario td.dia { border:none; height:96px; vertical-align:top; padding:9px 11px;
+                     border-radius:12px; background:var(--cinza); overflow:hidden;
+                     position:relative; }
+.cor-preta { background:var(--cinza); }
+.cor-vermelha { background:#ffe3e1; }
+.dia.fora { background:var(--cinza-2); }
+.dia.fora .num, .dia.fora .mil { color:#b8c0cc; }
+.dia.hoje { box-shadow:inset 0 0 0 2px var(--azul); }
+.dia .num { font-family:var(--mono); font-size:15px; font-weight:600; color:var(--tinta-3);
+            letter-spacing:-.02em; }
+.dia .mil { display:block; font-size:13.5px; color:var(--tinta); margin-top:7px; font-weight:600;
+            white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* Posto/graduação antes do nome: corpo menor e peso normal, para caber junto
+   sem competir com o nome — a célula comporta 12 postos na escala da guarda. */
+.dia .mil .pg { font-size:11.5px; font-weight:500; color:var(--tinta-2); }
+.fer { color:var(--vermelho); font-weight:700; }
+
+/* Dia de ESCALA VERMELHA: bloco inteiro no vermelho da OM, texto branco. */
+.calendario td.dia.cor-vermelha { background:var(--vermelha-escala); }
+.calendario td.dia.cor-vermelha .num,
+.calendario td.dia.cor-vermelha .mil,
+.calendario td.dia.cor-vermelha .fer { color:#fff; }
+.calendario td.dia.cor-vermelha .mil { font-weight:700; }
+/* Sobre o vermelho puro, a sigla apagada sumiria: vira branco translúcido. */
+.calendario td.dia.cor-vermelha .mil .pg { color:rgba(255,255,255,.85); font-weight:600; }
+/* Sobre o vermelho, o anel do 'hoje' vira branco. */
+.calendario td.dia.hoje.cor-vermelha { box-shadow:inset 0 0 0 2px rgba(255,255,255,.92); }
+/* Dia de outro mês continua apagado, mesmo sendo fim de semana. */
+.calendario td.dia.fora.cor-vermelha { background:#ffe3e1; }
+.calendario td.dia.fora.cor-vermelha .num,
+.calendario td.dia.fora.cor-vermelha .mil { color:#e39a97; }
+/* A amostra da legenda mostra a MESMA cor do dia. */
+.amostra.cor-vermelha { background:var(--vermelha-escala); border-color:var(--vermelha-escala); }
+
+.legenda { display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+           font-size:13px; color:var(--tinta-2); margin-top:18px; }
+.amostra { display:inline-block; width:15px; height:15px; border:1px solid var(--borda-forte);
+           border-radius:5px; vertical-align:middle; margin-left:10px; }
+
+/* --- gestão: navegação como grupo de pílulas -------------------------------- */
+.gestao-nav { display:flex; align-items:center; gap:3px; flex-wrap:wrap;
+              background:#e5e9f0; border:none; border-radius:12px; padding:4px; margin-bottom:24px; }
+/* São NOVE abas mais o bloco da direita, e a barra tem largura fixa: cada
+   aba nova custa espaço de todas. Com padding de 14px o 'Sair' já caía numa
+   segunda linha com oito; a de Configurações obrigou a apertar de novo e a
+   tirar o 'Manual' daqui — ele está no rodapé de TODAS as telas. */
+.gestao-nav a { color:var(--tinta-2); text-decoration:none; font-size:13.5px;
+                padding:8px 9px; border:none; border-radius:9px; white-space:nowrap;
+                transition:background .12s, color .12s; }
+.gestao-nav a:hover { color:var(--azul); background:rgba(255,255,255,.65); }
+.gestao-nav a.ativo { color:var(--azul); background:var(--papel); font-weight:600;
+                      box-shadow:0 1px 2px rgba(30,42,58,.14); }
+.gestao-nav .sep { flex:1; }
+.gestao-nav .quem { color:var(--tinta-3); font-size:13px; padding:0 6px; }
+.gestao-nav .sair { color:var(--vermelho); }
+.gestao-nav .externo { color:var(--tinta-3); }
+
+.linha-topo { display:flex; align-items:center; justify-content:space-between;
+              gap:12px; flex-wrap:wrap; margin-bottom:2px; }
+.linha-topo h2 { margin:0; }
+.linha-topo h3 { margin:0; }
+.linha-topo .acoes { display:flex; align-items:center; gap:14px; font-size:14px; }
+.linha-topo .acoes form { margin:0; }
+
+/* --- gestão: cartões de número ---------------------------------------------- */
+.cards { display:flex; gap:14px; flex-wrap:wrap; margin:18px 0 28px; }
+.card { flex:1; min-width:160px; border:1px solid var(--borda); border-radius:var(--raio);
+        background:var(--papel); box-shadow:var(--sombra); padding:18px 20px;
+        text-decoration:none; display:flex; flex-direction:column; gap:3px; color:inherit;
+        transition:border-color .12s, box-shadow .12s, transform .12s; }
+a.card:hover { border-color:var(--borda-forte); box-shadow:var(--sombra-2); transform:translateY(-1px); }
+.card .num { font-family:var(--mono); font-size:30px; font-weight:600; color:var(--azul);
+             line-height:1.15; }
+.card .rot { font-size:13px; color:var(--tinta-2); }
+
+/* --- tabelas ---------------------------------------------------------------- */
+.tabela { width:100%; border-collapse:collapse; font-size:14px;
+          background:var(--papel); border:1px solid var(--borda); border-radius:var(--raio);
+          overflow:hidden; box-shadow:var(--sombra); }
+/* Cabeçalho: era cinza-claro de 11px, quase invisível sobre fundo cinza. */
+.tabela th { text-align:left; padding:11px 16px; color:var(--tinta-2); font-size:11.5px;
+             font-weight:700; text-transform:uppercase; letter-spacing:.06em;
+             background:var(--cinza); border-bottom:1px solid var(--borda); }
+.tabela td { border-bottom:1px solid var(--linha); padding:11px 16px; vertical-align:middle;
+             color:var(--tinta); }
+.tabela tr:last-child td { border-bottom:none; }
+/* A primeira coluna é o que identifica a linha (Militar, Escala, Data, Quando):
+   negrito só nela. Negrito em tudo apaga a hierarquia numa tabela de 139 linhas. */
+.tabela tbody td:first-child { font-weight:600; }
+.tabela .fraco { color:var(--tinta-3); }
+.tabela td a { color:var(--link); text-decoration:none; font-weight:500; }
+.tabela td a:hover { text-decoration:underline; }
+/* Botão dentro de tabela: `.tabela td a` acima é mais específico que `.botao` e
+   deixava o primário azul-escuro COM LETRA azul-escura (contraste 1,3:1).
+   A cor do botão tem que vencer a cor de link. */
+.tabela td a.botao { color:#fff; }
+.tabela td a.botao.secundario { color:var(--azul); }
+.tabela td a.botao:hover { text-decoration:none; }
+
+/* Zebra. Vem antes dos estados de linha e do hover: quem estiver embaixo na
+   folha ganha, e a ordem tem que ser zebra < estado < hover — senão a linha
+   permutada, caindo numa faixa par, deixa de parecer permutada. */
+.tabela tbody tr:nth-child(even) td { background:var(--zebra); }
+/* Registro desativado: militar inativo, participante isento, escala extinta. */
+.tabela tbody tr.inativa td { color:var(--tinta-3); background:#fafbfd; }
+.tabela tbody tr.inativa td a { color:var(--tinta-2); }
+/* Serviço já coberto por permuta. */
+.tabela tbody tr.permutado td { background:#e7effb; }
+/* Hover por último: tem que vencer a zebra E o estado da linha. */
+.tabela tbody tr:hover td { background:var(--hover-linha); }
+.tabela form { margin:0; padding:0; border:none; background:none; display:inline; box-shadow:none; }
+.tabela td.acoes-linha { white-space:nowrap; }
+.tabela td.acoes-linha > * + * { margin-left:6px; }
+.tabela form.inline { display:flex; gap:6px; align-items:center; }
+.tabela form.inline input { padding:6px 10px; border:1px solid var(--borda); border-radius:var(--raio-p);
+                            font-size:13px; min-width:200px; background:var(--papel); color:inherit; }
+
+/* --- etiquetas: cor SEMPRE com a palavra ------------------------------------ */
+.tag { display:inline-block; font-size:11px; padding:2px 10px; border-radius:11px;
+       background:#eceef1; color:var(--tinta-2); border:1px solid var(--borda);
+       vertical-align:middle; font-weight:500; }
+.tag-criar { background:var(--verde-fundo); color:var(--verde); border-color:var(--verde-borda); }
+.tag-alterar { background:#fef3cd; color:var(--ambar); border-color:var(--ambar-borda); }
+.tag-excluir { background:var(--vermelho-fundo); color:var(--vermelho); border-color:var(--vermelho-borda); }
+.tag-escalar { background:#e7eefb; color:#1c4db3; border-color:#c9d8f5; }
+.tag.cor-preta { background:#eceef1; color:#333; border-color:var(--borda); }
+.tag.cor-vermelha { background:var(--vermelho-fundo); color:var(--vermelho);
+                    border-color:var(--vermelho-borda); }
+
+.pilula { display:inline-block; font-size:11px; padding:2px 10px; border-radius:11px;
+          border:1px solid var(--borda); vertical-align:middle; }
+.pilula-preta { background:#eceef1; color:#333; }
+.pilula-vermelha { background:var(--vermelho-fundo); color:var(--vermelho);
+                   border-color:var(--vermelho-borda); }
+
+/* --- histórico de alterações (auditoria) ------------------------------------ */
+.mudancas { list-style:none; margin:0; padding:0; font-size:13px; }
+.mudancas li { margin:1px 0; }
+.mudancas .campo { color:var(--tinta-2); font-weight:600; }
+.mudancas .campo::after { content:":"; }
+.mudancas .de { color:var(--tinta-3); text-decoration:line-through; }
+.retrato { display:grid; grid-template-columns:auto 1fr; gap:3px 12px;
+           margin:8px 0 2px; font-size:13px; }
+.retrato dt { color:var(--tinta-2); font-weight:600; }
+.retrato dd { margin:0; word-break:break-word; }
+details summary { cursor:pointer; font-size:13px; color:var(--link); }
+.paginacao { display:flex; align-items:center; gap:14px; margin:16px 0; }
+
+/* Índice das seções de uma página longa (tela da escala). */
+.secoes { display:flex; flex-wrap:wrap; gap:8px; margin:16px 0 4px; }
+.secoes a { display:inline-flex; align-items:center; gap:7px; font-size:13.5px;
+            text-decoration:none; color:var(--tinta-2); background:var(--papel);
+            border:1px solid var(--borda); border-radius:var(--pill); padding:6px 14px; }
+.secoes a:hover { border-color:var(--azul-claro); color:var(--azul); }
+.secoes a.ativo { border-color:var(--azul); color:var(--azul); font-weight:600; }
+.secoes .conta { font-family:var(--mono); font-size:12px; color:var(--tinta-3);
+                 background:var(--cinza); border-radius:9px; padding:0 7px; }
+.formulario .limpar { font-size:13px; padding-bottom:9px; }
+
+/* --- formulários ------------------------------------------------------------ */
+.formulario { display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end;
+              border:1px solid var(--borda); border-radius:var(--raio); padding:18px 20px;
+              background:var(--papel); box-shadow:var(--sombra); margin:16px 0; }
+.formulario.col { flex-direction:column; align-items:stretch; }
+.formulario.col > button { align-self:flex-start; }
+.formulario label, .login-box label, .importar label, .grade2 label {
+              display:flex; flex-direction:column; font-size:13px; color:var(--tinta-2);
+              gap:6px; font-weight:600; }
+.formulario input, .formulario select, .login-box input {
+              padding:9px 12px; border:1px solid var(--borda-forte); border-radius:var(--raio-p);
+              font-size:14px; font-family:inherit; color:var(--tinta); background:var(--papel);
+              transition:border-color .12s, box-shadow .12s; }
+.formulario input:hover, .formulario select:hover { border-color:var(--azul-claro); }
+.formulario input:focus, .formulario select:focus, .login-box input:focus {
+              outline:none; border-color:var(--azul-claro);
+              box-shadow:0 0 0 3px rgba(47,74,107,.16); }
+.formulario input::placeholder { color:#aab2bd; }
+.formulario label .fraco, .grade2 label .fraco { font-size:12px; color:var(--tinta-3); font-weight:400; }
+/* Agrupamento por posto/graduação nos <select> longos: tira o itálico do padrão
+   do navegador e dá hierarquia ao rótulo do grupo. */
+.formulario select optgroup { font-style:normal; font-weight:700; color:var(--tinta-2); }
+.formulario select option { font-weight:400; color:var(--tinta); }
+
+.grade2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+/* Barra de busca: o campo de texto ocupa a sobra, os filtros ficam do tamanho
+   do conteúdo. É a primeira coisa da tela, então não pode competir com a
+   tabela — fundo do papel, sem sombra. */
+.formulario.busca { gap:12px; padding:14px 16px; margin:0 0 6px;
+                    box-shadow:none; border-color:var(--borda); }
+.formulario.busca .cresce { flex:1 1 260px; }
+.formulario.busca .cresce input { width:100%; }
+
+.vazio { color:var(--tinta-2); font-size:14px; background:var(--papel);
+         border:1px dashed var(--borda-forte); border-radius:var(--raio);
+         padding:26px 24px; text-align:center; line-height:1.55; }
+/* Lupa discreta: o estado vazio parece intencional, não uma tela quebrada. */
+.vazio::before { content:"\2315"; display:block; font-size:26px; color:var(--tinta-3);
+         margin-bottom:6px; line-height:1; }
+.vazio strong { color:var(--tinta); }
+
+.formulario .check { flex:1 1 100%; flex-direction:row; align-items:center; gap:8px; max-width:none; }
+.formulario .check span { font-size:13px; color:var(--tinta-2); font-weight:400; }
+.formulario .check input[type=checkbox] { width:16px; height:16px; accent-color:var(--azul); }
+
+fieldset.cores { border:1px solid var(--borda); border-radius:var(--raio);
+                 padding:12px 16px 14px; margin:0 0 4px; background:var(--cinza);
+                 display:flex; flex-direction:column; gap:8px; }
+fieldset.cores legend { font-size:12px; color:var(--tinta-2); padding:0 6px;
+                        font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
+
+/* --- botões ----------------------------------------------------------------- */
+button, .botao { background:var(--azul); color:#fff; border:1px solid var(--azul);
+              border-radius:var(--raio-p); padding:9px 18px; font-size:14px;
+              font-family:inherit; font-weight:600; cursor:pointer; text-decoration:none;
+              display:inline-block; transition:background .12s, border-color .12s, box-shadow .12s; }
+button:hover, .botao:hover { background:var(--azul-claro); border-color:var(--azul-claro);
+              box-shadow:0 2px 8px rgba(28,42,58,.22); }
+button:active, .botao:active { transform:translateY(1px); }
+button.secundario, .botao.secundario {
+              background:var(--papel); color:var(--azul); border-color:var(--borda-forte); box-shadow:none; }
+button.secundario:hover, .botao.secundario:hover {
+              background:var(--cinza); border-color:var(--azul-claro); }
+button.mini, a.botao.mini { padding:5px 12px; font-size:12px; font-weight:600;
+              text-decoration:none; display:inline-block; border-radius:8px; }
+button.perigo { background:var(--papel); color:var(--vermelho); border-color:var(--vermelho-borda); box-shadow:none; }
+button.perigo:hover { background:var(--vermelho-fundo); border-color:var(--vermelho); box-shadow:none; }
+
+/* --- mensagens -------------------------------------------------------------- */
+.erro { background:var(--vermelho-fundo); color:var(--vermelho); border:1px solid var(--vermelho-borda);
+        border-left:4px solid var(--vermelho); border-radius:var(--raio-p);
+        padding:12px 16px; font-size:14px; margin:12px 0; }
+.alerta { color:var(--vermelho); }
+
+/* Faixa de situação do painel: resume, no topo, se há o que fazer. Precisa ter
+   peso visual MAIOR que as tabelas de contexto logo abaixo — senão o urgente e
+   a estatística do ano parecem a mesma coisa. */
+.situacao { border-radius:var(--raio); padding:16px 20px 8px; margin:6px 0 26px;
+            border:1px solid transparent; border-left-width:4px; }
+.situacao h3 { margin:0 0 4px; font-size:17px; border:none; padding:0;
+               display:flex; align-items:center; gap:9px; }
+/* Marcador da situação ("!" urgente, "\2713" calma): reforça o estado sem ser só cor. */
+.situacao h3::before { display:inline-flex; align-items:center; justify-content:center;
+               width:22px; height:22px; flex:none; border-radius:50%; color:#fff;
+               font-size:13px; font-weight:700; }
+.situacao ul { list-style:none; margin:0; padding:0; }
+/* Cada pendência vira uma LINHA de ação, separada por fio e com seta — some o
+   "monte de bullets" e fica claro que dá para clicar e resolver. */
+.situacao li { margin:0; font-size:14px; }
+.situacao li a { display:flex; align-items:center; justify-content:space-between; gap:12px;
+               padding:10px 2px; text-decoration:none; }
+.situacao li + li a { border-top:1px solid rgba(27,31,36,.10); }
+.situacao li a::after { content:"\2192"; font-size:15px; opacity:.65; }
+.situacao p { margin:0 0 8px; font-size:14px; }
+.situacao.urgente { background:var(--vermelho-fundo); border-color:var(--vermelho-borda); }
+.situacao.urgente h3 { color:var(--vermelho); }
+.situacao.urgente h3::before { content:"!"; background:var(--vermelho); }
+.situacao.urgente a { color:var(--vermelho); font-weight:600; }
+.situacao.urgente li + li a { border-top-color:rgba(179,38,30,.16); }
+.situacao.urgente li a:hover { text-decoration:underline; }
+.situacao.calma { background:var(--verde-fundo); border-color:var(--verde-borda); }
+.situacao.calma h3 { color:var(--verde); }
+.situacao.calma h3::before { content:"\2713"; background:var(--verde); }
+.situacao.calma p { color:var(--verde); }
+/* Confirmação de ação. Mesma família da tarja de erro, do outro lado: verde,
+   com o traço à esquerda. `role="status"` faz o leitor de tela anunciar. */
+.sucesso { display:flex; align-items:center; gap:10px;
+           background:var(--verde-fundo); color:var(--verde); border:1px solid var(--verde-borda);
+           border-left:4px solid var(--verde); border-radius:var(--raio-p);
+           padding:11px 15px; font-size:14px; margin:0 0 18px; font-weight:500; }
+/* Selo afirmativo: dá o "deu certo" num relance, sem depender só da cor verde. */
+.sucesso::before { content:"\2713"; display:inline-flex; align-items:center; justify-content:center;
+           width:20px; height:20px; flex:none; border-radius:50%;
+           background:var(--verde); color:#fff; font-size:12px; font-weight:700; }
+.avisos { list-style:none; margin:0 0 18px; padding:14px 18px; font-size:13.5px;
+          background:var(--ambar-fundo); border:1px solid var(--ambar-borda);
+          border-left:4px solid #d9a520; border-radius:var(--raio-p); color:var(--ambar); line-height:1.5; }
+.avisos li + li { margin-top:6px; }
+/* Pendência de configuração: mesma família do .avisos, mas parágrafo solto —
+   "falta escolher a OM desta instalação" não é lista nem é erro. */
+.alerta-caixa { margin:0 0 18px; padding:12px 16px; font-size:14px; line-height:1.55;
+                background:var(--ambar-fundo); border:1px solid var(--ambar-borda);
+                border-left:4px solid #d9a520; border-radius:var(--raio-p);
+                color:var(--ambar); }
+
+.resultado { border:1px solid var(--borda); border-radius:var(--raio); background:var(--papel);
+             box-shadow:var(--sombra); padding:18px 22px; margin-bottom:20px; }
+.resultado h3 { margin-top:0; }
+.resultado ul { margin:8px 0; padding-left:20px; }
+.resultado li { margin:3px 0; }
+
+/* --- login ------------------------------------------------------------------ */
+.login-box { max-width:380px; margin:56px auto; border:1px solid var(--borda);
+             border-radius:16px; padding:30px 32px; background:var(--papel); box-shadow:var(--sombra-2); }
+.login-box h2 { margin-top:0; }
+.login-box form { display:flex; flex-direction:column; gap:14px; margin:18px 0; }
+.login-box input { width:100%; }
+
+/* --- importação da ficha (PDF) no cadastro de militar ----------------------- */
+.importar { display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end;
+            background:var(--cinza); border:1px dashed var(--borda-forte);
+            border-radius:var(--raio); padding:16px 18px; margin-bottom:18px; }
+.importar input[type=file] { padding:6px 0; border:none; font-size:13px;
+            font-family:inherit; color:var(--tinta-2); }
+
+/* --- telas estreitas -------------------------------------------------------- */
+@media (max-width:760px) {
+  main { padding:0 14px; margin-top:16px; }
+  .grade2 { grid-template-columns:1fr; }
+  .topo { padding:10px 14px; }
+  .topo h1 { font-size:15px; }
+  .tabela { display:block; overflow-x:auto; white-space:nowrap; }
+  .calendario { border-spacing:4px; }
+  .calendario td.dia { height:72px; padding:7px 8px; }
+  .dia .mil { font-size:11.5px; }
+  .mes-nav h2 { min-width:0; font-size:18px; }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  * { transition:none !important; }
+  button:active, .botao:active { transform:none; }
+  a.card:hover { transform:none; }
+}

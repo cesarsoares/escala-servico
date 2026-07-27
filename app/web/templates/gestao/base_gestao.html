@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+{# `atual` marca a aba da tela em que se está. Casa pelo começo do caminho, para
+   que /gestao/escalas/3 acenda 'Escalas'; '/gestao' exige igualdade, senão
+   acenderia em todas as telas. #}
+{% set caminho = request.url.path %}
+<nav class="gestao-nav">
+  <a href="/gestao" class="{{ 'ativo' if caminho == '/gestao' }}">Painel</a>
+  <a href="/gestao/militares" class="{{ 'ativo' if caminho.startswith('/gestao/militares') }}">Efetivo</a>
+  <a href="/gestao/escalas" class="{{ 'ativo' if caminho.startswith('/gestao/escalas') }}">Escalas</a>
+  <a href="/gestao/calendario" class="{{ 'ativo' if caminho.startswith('/gestao/calendario') }}">Calendário</a>
+  <a href="/gestao/impedimentos" class="{{ 'ativo' if caminho.startswith('/gestao/impedimentos') }}">Impedimentos</a>
+  <a href="/gestao/permutas" class="{{ 'ativo' if caminho.startswith('/gestao/permutas') }}">Permutas</a>
+  <a href="/gestao/escalar" class="{{ 'ativo' if caminho.startswith('/gestao/escalar') }}">Escalar</a>
+  <a href="/gestao/auditoria" class="{{ 'ativo' if caminho.startswith('/gestao/auditoria') }}">Histórico</a>
+  <a href="/gestao/configuracao" class="{{ 'ativo' if caminho.startswith('/gestao/configuracao') }}">Configurações</a>
+  <span class="sep"></span>
+  {# O manual NÃO entra aqui: a barra tem largura fixa e cada aba nova empurra
+     o 'Sair' para a segunda linha. Ele está no rodapé de todas as telas. #}
+  <a href="/" class="externo">Ver consulta</a>
+  {% if gestor %}<span class="quem">{{ gestor.nome }}</span>
+  <a href="/gestao/logout" class="sair">Sair</a>{% endif %}
+</nav>
+{# Confirmação da ação que acabou de acontecer (chega como ?ok= no redirect).
+   Antes disso, só o ERRO falava: acertar era silencioso. #}
+{% set ok = AVISOS.get(request.query_params.get('ok')) %}
+{% if ok %}<p class="sucesso" role="status">{{ ok }}</p>{% endif %}
+{% block gestao %}{% endblock %}
+{% endblock %}

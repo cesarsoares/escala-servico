@@ -1,0 +1,190 @@
+{% extends "gestao/base_gestao.html" %}
+{% block title %}{{ escala.nome }} — Gestão{% endblock %}
+{% block estilos %}<link rel="stylesheet" href="/static/graficos.css">{% endblock %}
+{% block gestao %}
+<p class="sub"><a href="/gestao/escalas">← Escalas</a></p>
+<div class="linha-topo">
+  <h2>{{ escala.nome }}
+    {% if not escala.ativa %}<span class="tag tag-excluir">extinta</span>{% endif %}</h2>
+  <div class="acoes">
+    <a href="/gestao/escalar">escalar período</a>
+    <a href="/?escala_id={{ escala.id }}">ver no calendário</a>
+    {% if escala.ativa %}
+      <form method="post" action="/gestao/escalas/{{ escala.id }}/extinguir"
+            onsubmit="return confirm('Extinguir {{ escala.nome }}? Ela sai da rotação; os serviços já gravados são preservados.')">
+        <button class="mini perigo" type="submit">extinguir</button></form>
+    {% else %}
+      <form method="post" action="/gestao/escalas/{{ escala.id }}/reativar">
+        <button class="mini" type="submit">reativar</button></form>
+    {% endif %}
+  </div>
+</div>
+{% if erro %}<p class="erro">{{ erro }}</p>{% endif %}
+
+{# Quatro assuntos numa página só (dados, postos, participantes, concorrência).
+   Com 139 participantes, os outros três somem no fim do rolo — daí este índice
+   com a contagem de cada seção. #}
+<nav class="secoes">
+  <a href="#dados">Dados</a>
+  <a href="#postos">Postos <span class="conta">{{ postos|length }}</span></a>
+  <a href="#participantes">Participantes <span class="conta">{{ participantes_ativos }}</span></a>
+  <a href="#concorrentes">Concorrentes <span class="conta">{{ concorrentes|length }}</span></a>
+  {% if fila %}<a href="#fila">Fila <span class="conta">{{ fila|length }}</span></a>{% endif %}
+</nav>
+
+<h3 id="dados">Dados da escala</h3>
+<form method="post" action="/gestao/escalas/{{ escala.id }}" class="formulario col">
+  <div class="grade2">
+    <label>Nome *
+      <input name="nome" value="{{ v.nome }}" required maxlength="120"></label>
+    <label>Folga mínima (horas)
+      <input type="number" name="folga_minima_horas" min="24" value="{{ v.folga_minima_horas }}"
+             placeholder="48">
+      <span class="fraco">em branco = 48h; piso rígido de 24h (regra 7.2.1)</span></label>
+    <label>Início do serviço *
+      <input type="time" name="inicio_servico" value="{{ v.inicio_servico }}" required></label>
+    <label>Duração (horas) *
+      <input type="number" name="duracao_horas" min="1" value="{{ v.duracao_horas }}" required></label>
+  </div>
+  <fieldset class="cores">
+    <legend>Dias em que roda (regra 4.5)</legend>
+    <label class="check"><input type="checkbox" name="tem_preta" value="1"
+      {{ 'checked' if v.tem_preta }}><span>preta — dias úteis</span></label>
+    <label class="check"><input type="checkbox" name="tem_vermelha" value="1"
+      {{ 'checked' if v.tem_vermelha }}><span>vermelha — sábados, domingos e feriados</span></label>
+  </fieldset>
+  <button type="submit">Salvar dados</button>
+</form>
+<p class="sub">Mudar a janela do serviço ou a folga não recalcula o que já foi escalado —
+vale da próxima escalação em diante.</p>
+
+<h3 id="postos">Postos ({{ postos|length }} vaga(s) por dia)</h3>
+<p class="sub">Cada posto é uma vaga do dia (regra 2.5): a escala do museu tem uma, a
+guarda pode ter doze. O rótulo é opcional e sai no documento impresso.</p>
+<table class="tabela">
+  <thead><tr><th>Ordem</th><th>Rótulo</th><th></th></tr></thead>
+  <tbody>
+  {% for p in postos %}
+    <tr>
+      <td>{{ p.ordem }}º</td>
+      <td>
+        <form method="post" action="/gestao/escalas/{{ escala.id }}/postos/{{ p.id }}" class="inline">
+          <input name="rotulo" value="{{ p.rotulo or '' }}" maxlength="80"
+                 placeholder="sem rótulo">
+          <button class="mini secundario" type="submit">salvar</button>
+        </form>
+      </td>
+      <td>
+        {% if p.id in postos_com_servico %}
+          <span class="fraco">em uso — tem serviço gravado</span>
+        {% elif postos|length > 1 %}
+          <form method="post" action="/gestao/escalas/{{ escala.id }}/postos/{{ p.id }}/remover"
+                onsubmit="return confirm('Remover o {{ p.ordem }}º posto?')">
+            <button class="mini perigo" type="submit">remover</button></form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<form method="post" action="/gestao/escalas/{{ escala.id }}/postos" class="formulario">
+  <label>Novo posto — rótulo (opcional)
+    <input name="rotulo" maxlength="80" placeholder="ex.: Comandante da Guarda"></label>
+  <button type="submit" class="secundario">+ Acrescentar posto</button>
+</form>
+
+<h3 id="participantes">Participantes ({{ participantes_ativos }})</h3>
+<p class="sub">Quem concorre na fila desta escala (regra 3.3). Quem não deve concorrer
+simplesmente não participa — é assim que se faz a isenção permanente (regra 7.6).</p>
+<table class="tabela">
+  <thead><tr><th>Militar</th><th>Posto/Grad</th><th>OM</th><th></th></tr></thead>
+  <tbody>
+  {% for vinculo, m in participantes %}
+    <tr class="{{ '' if vinculo.ativo else 'inativa' }}">
+      <td><a href="/gestao/militares/{{ m.id }}">{{ m.nome_guerra }}</a>
+        {% if not vinculo.ativo %}<span class="tag tag-excluir">isento</span>{% endif %}</td>
+      <td>{{ m.posto_graduacao.sigla }}</td>
+      <td>{{ m.om.sigla }}</td>
+      <td>
+        {% if vinculo.ativo %}
+          <form method="post" action="/gestao/escalas/{{ escala.id }}/participantes/{{ m.id }}/isentar"
+                onsubmit="return confirm('Isentar {{ m.nome_guerra }} desta escala? Ele deixa de concorrer na fila.')">
+            <button class="mini perigo" type="submit">isentar</button></form>
+        {% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="4" class="sub">Nenhum militar participa desta escala ainda.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<form method="post" action="/gestao/escalas/{{ escala.id }}/participantes" class="formulario">
+  <label>Acrescentar militar
+    <select name="militar_id" required>
+      <option value="">—</option>
+      {% for sigla, gente in candidatos %}
+        <optgroup label="{{ sigla }}">
+        {% for m in gente %}<option value="{{ m.id }}">{{ m.nome_guerra }}</option>{% endfor %}
+        </optgroup>
+      {% endfor %}
+    </select></label>
+  <button type="submit" class="secundario">+ Incluir na escala</button>
+</form>
+
+<h3 id="concorrentes">Escalas concorrentes ({{ concorrentes|length }})</h3>
+<p class="sub">Declarar concorrência é o que faz duas escalas conversarem: quem sai de
+serviço numa só entra na outra depois de cumprir a folga mínima (regra 7.4.1). A
+relação é simétrica — declarada aqui, vale nos dois sentidos.</p>
+<table class="tabela">
+  <thead><tr><th>Escala</th><th>Cores</th><th></th></tr></thead>
+  <tbody>
+  {% for c in concorrentes %}
+    <tr>
+      <td><a href="/gestao/escalas/{{ c.id }}">{{ c.nome }}</a>
+        {% if not c.ativa %}<span class="tag tag-excluir">extinta</span>{% endif %}</td>
+      <td>
+        {% if c.tem_preta %}<span class="pilula pilula-preta">preta</span>{% endif %}
+        {% if c.tem_vermelha %}<span class="pilula pilula-vermelha">vermelha</span>{% endif %}
+      </td>
+      <td>
+        <form method="post" action="/gestao/escalas/{{ escala.id }}/concorrentes/{{ c.id }}/remover">
+          <button class="mini perigo" type="submit">remover</button></form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="3" class="sub">Esta escala não concorre com nenhuma outra.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% if disponiveis %}
+<form method="post" action="/gestao/escalas/{{ escala.id }}/concorrentes" class="formulario">
+  <label>Declarar concorrência com
+    <select name="outra_id" required>
+      <option value="">—</option>
+      {% for e in disponiveis %}<option value="{{ e.id }}">{{ e.nome }}</option>{% endfor %}
+    </select></label>
+  <button type="submit" class="secundario">+ Declarar</button>
+</form>
+{% endif %}
+
+{% if fila %}
+<h3 id="fila">Fila — quem serviu menos
+  <span class="fraco">— serviços por participante em {{ ano }}</span></h3>
+<p class="sub">Leitura de <strong>equidade</strong>, não a previsão do motor: aqui só
+  contam os serviços do ano. Quem entra de fato no próximo dia sai da rotação (regra 6),
+  que também pesa folga mínima, cor do dia, impedimento e antiguidade. Clique num
+  militar para ver a ficha dele.</p>
+<div class="ranking">
+  {% for lugar in fila %}
+    <a class="rk {{ 'proximo' if lugar.proximo }}" href="/gestao/militares/{{ lugar.militar.id }}">
+      <span class="pos">{{ loop.index }}</span>
+      <span class="quem">{{ lugar.militar.nome_guerra }}
+        <span class="g">{{ lugar.militar.posto_graduacao.sigla }}</span>
+        {%- if lugar.proximo %}<span class="prox">menos serviços</span>{% endif %}</span>
+      <span class="rk-bar"><i style="width:{{ lugar.pct }}%"></i></span>
+      <span class="rk-n">{{ lugar.servicos }}</span>
+    </a>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
