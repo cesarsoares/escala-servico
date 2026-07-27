@@ -644,6 +644,16 @@ antiguidade, ignorando quem acabou de deixar o serviço.
 - **Nada é chutado**: escala/militar/data/posto que não casam viram recusa
   **com o motivo e o número da linha**. Homônimo em duas OMs sem a coluna `om`
   é ambiguidade — recusa, não palpite.
+- ⚠️ **Militar que está no CSV mas não está no efetivo é RECUSA, e isso foi
+  decidido assim** (usuário, 2026-07-27) — não é lacuna a consertar. A recusa é
+  por linha: as boas entram, e depois de cadastrar quem faltava **basta
+  reimportar o mesmo arquivo**, porque serviço já gravado é recusado como
+  duplicado (`(posto, dia)`), sem duplicar nada. Criar o militar a partir do
+  arquivo foi **descartado**: o CSV traz nome e, no máximo, a sigla da OM —
+  faltam posto/graduação (que ordena a fila e sai no documento impresso) e o
+  número de antiguidade das praças. O militar entraria na rotação com o
+  desempate errado e sem patente na escala publicada: erro silencioso, pior que
+  a recusa.
 - **Serviço importado é fato consumado**: entra mesmo que o militar não seja
   mais participante (isso é AVISO). Recusar impediria de carregar exatamente o
   histórico que se quer registrar.
