@@ -147,12 +147,19 @@ CREATE TABLE escala_concorrente (
 -- Participação militar <-> escala (regra 3.3). `ativo` = participa hoje;
 -- isenção permanente = não-participação (ativo FALSE ou sem linha) — regra 7.6.
 -- SEM colunas ultima_preta/ultima_vermelha: as datas de fila derivam de `servico`.
+-- `serve_preta`/`serve_vermelha` (regra 3.3.1): em que cores ESTA pessoa
+-- concorre nesta escala. Não confundir com escala.tem_preta/tem_vermelha (4.2),
+-- que é em que cores a ESCALA roda — aqui a escala roda as duas e o militar
+-- concorre em uma só (função que o impede de servir em dia útil).
 CREATE TABLE participacao (
-    id         INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    militar_id INT NOT NULL REFERENCES militar (id) ON DELETE CASCADE,
-    escala_id  INT NOT NULL REFERENCES escala (id) ON DELETE CASCADE,
-    ativo      BOOLEAN NOT NULL DEFAULT TRUE,
-    UNIQUE (militar_id, escala_id)
+    id             INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    militar_id     INT NOT NULL REFERENCES militar (id) ON DELETE CASCADE,
+    escala_id      INT NOT NULL REFERENCES escala (id) ON DELETE CASCADE,
+    ativo          BOOLEAN NOT NULL DEFAULT TRUE,
+    serve_preta    BOOLEAN NOT NULL DEFAULT TRUE,
+    serve_vermelha BOOLEAN NOT NULL DEFAULT TRUE,
+    UNIQUE (militar_id, escala_id),
+    CONSTRAINT ck_participacao_cor CHECK (serve_preta OR serve_vermelha)
 );
 
 

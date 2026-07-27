@@ -4,12 +4,24 @@
 {% if not escalas %}
   <section class="aviso"><p>Nenhuma escala cadastrada ainda.</p></section>
 {% else %}
-<nav class="escalas">
-  {% for e in escalas %}
-    <a href="/?escala_id={{ e.id }}&ano={{ ano }}&mes={{ mes }}"
-       class="chip {{ 'ativo' if e.id == escala.id }}">{{ e.nome }}</a>
-  {% endfor %}
-</nav>
+{# Cortina de escalas (<details> nativo: sem JavaScript, funciona no teclado e
+   no leitor de tela). Uma OM pode ter dezenas de escalas — em linha, os chips
+   quebravam em três faixas e empurravam o calendário para fora da tela. Com a
+   lista recolhida, o RESUMO tem de dizer qual escala está sendo exibida: é o
+   que o chip marcado fazia. #}
+<details class="menu-escalas">
+  <summary>
+    <span class="rotulo">Escalas <span class="conta">{{ escalas|length }}</span></span>
+    <span class="atual">{{ escala.nome }}</span>
+  </summary>
+  <nav class="escalas">
+    {% for e in escalas %}
+      <a href="/?escala_id={{ e.id }}&ano={{ ano }}&mes={{ mes }}"
+         class="chip {{ 'ativo' if e.id == escala.id }}"
+         {{ 'aria-current=page' if e.id == escala.id }}>{{ e.nome }}</a>
+    {% endfor %}
+  </nav>
+</details>
 
 <div class="mes-nav">
   <a class="seta" href="/?escala_id={{ escala.id }}&ano={{ prev[0] }}&mes={{ prev[1] }}">&larr;</a>

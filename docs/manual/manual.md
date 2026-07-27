@@ -69,6 +69,21 @@ Em **Escalas → Nova escala**. Uma escala carrega:
 
 **Concorrência é simétrica**: declarada de um lado, vale nos dois.
 
+**Militar que só serve em fim de semana.** Na escala que roda as duas cores,
+cada participante tem a coluna **Concorre em**: *as duas*, *só preta* ou *só
+vermelha* (regra 3.3.1). É o caso do militar cuja função o impede de servir em
+dia útil — ele participa da escala, mas só entra na fila da vermelha. Duas
+coisas que costumam confundir:
+
+- **não é isenção** (essa tira da escala inteira) **nem dispensa** (essa é por
+  período e guarda a vez). Quem concorre só na vermelha simplesmente não está na
+  fila da preta;
+- **a folga mínima continua valendo em qualquer cor**: quem serviu no sábado só
+  assume de novo depois de cumprir a folga, inclusive nas escalas concorrentes.
+
+Quando a restrição deixa uma cor sem gente suficiente para as vagas, o painel
+avisa dizendo **qual** cor está descoberta.
+
 ### 1.6 Carregar o histórico
 
 Se a OM já vinha fazendo escala em planilha, **importe o histórico** em
@@ -175,6 +190,10 @@ reincluir depois reaproveita o mesmo vínculo.
 A página inicial mostra o **calendário do mês** de uma escala, com o
 posto/graduação e o nome de quem serve em cada dia. Não exige login (regra 13.1)
 — é para todo o efetivo consultar.
+
+Para trocar de escala, abra a cortina **Escalas** no alto da página: ela fica
+recolhida para não empurrar o calendário para baixo, e mostra ao lado do título
+qual escala está sendo exibida.
 
 Os dias de **escala vermelha** aparecem na cor da OM. A cor nunca é a única
 informação: sábado e domingo vêm escritos no cabeçalho, e o feriado tem marca

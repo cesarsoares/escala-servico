@@ -49,9 +49,17 @@ class Participacao:
     ultima_preta: date | None = None      # regra 3.3
     ultima_vermelha: date | None = None
     ativo: bool = True                    # isenção permanente = ativo False (regra 7.6)
+    # Regra 3.3.1: em que cores este militar concorre NESTA escala. O padrão é
+    # nas duas — a restrição é o caso particular (função que impede dia útil).
+    serve_preta: bool = True
+    serve_vermelha: bool = True
 
     def ultimo_na_cor(self, cor: Cor) -> date | None:
         return self.ultima_preta if cor is Cor.PRETA else self.ultima_vermelha
+
+    def serve_cor(self, cor: Cor) -> bool:
+        """Regra 3.3.1 — participa da fila desta cor?"""
+        return self.serve_preta if cor is Cor.PRETA else self.serve_vermelha
 
 
 @dataclass(frozen=True)

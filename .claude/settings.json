@@ -25,7 +25,19 @@
       "PowerShell($script = \"/mnt/c/Users/cesar/AppData/Local/Temp/claude/c--Users-cesar-OneDrive-Documentos-projetos-escala/9fbfa581-3529-44c1-8afc-0ec33252d2e7/scratchpad/build.sh\")",
       "Bash(cat > *)",
       "PowerShell($script = \"/mnt/c/Users/cesar/AppData/Local/Temp/claude/c--Users-cesar-OneDrive-Documentos-projetos-escala/9fbfa581-3529-44c1-8afc-0ec33252d2e7/scratchpad/subir.sh\")",
-      "Bash(python -m tools.exportar_interface \"C:/Users/cesar/AppData/Local/Temp/claude/c--Users-cesar-OneDrive-Documentos-projetos-escala/9fbfa581-3529-44c1-8afc-0ec33252d2e7/scratchpad/hub\")"
+      "Bash(python -m tools.exportar_interface \"C:/Users/cesar/AppData/Local/Temp/claude/c--Users-cesar-OneDrive-Documentos-projetos-escala/9fbfa581-3529-44c1-8afc-0ec33252d2e7/scratchpad/hub\")",
+      "PowerShell($script = \"/mnt/c/Users/cesar/AppData/Local/Temp/claude/c--Users-cesar-OneDrive-Documentos-projetos-escala/9fbfa581-3529-44c1-8afc-0ec33252d2e7/scratchpad/rebuild.sh\")",
+      "Bash(ls -la \"/c/Users/cesar/.claude/projects/c--Users-cesar-OneDrive-Documentos-projetos-escala/\" 2>/dev/null | head -40)",
+      "Read(//c/Users/cesar/.claude/projects/c--Users-cesar-OneDrive-Documentos-projetos-escala//**)",
+      "Bash(cd \"/c/Users/cesar/.claude/projects/c--Users-cesar-OneDrive-Documentos-projetos-escala/\" && grep -l -i \"importe a última sess\\\\|importar a última sess\\\\|importe a ultima sess\" *.jsonl)",
+      "Bash(cd \"/c/Users/cesar/.claude/projects/c--Users-cesar-OneDrive-Documentos-projetos-escala/memory\" && ls -la && cat estado-em-26-07-tarde.md)",
+      "Read(//c/Users/cesar/.claude/projects/c--Users-cesar-OneDrive-Documentos-projetos-escala/memory/**)",
+      "Bash(python -m alembic heads)",
+      "Bash(python -m pytest tests/test_participacao_por_cor.py -q)",
+      "Bash(python -m pytest tests/test_participacao_por_cor.py::test_sabado_escala_o_restrito_normalmente -q)",
+      "Bash(python -m pytest tests/test_schema_sincronizado.py tests/test_painel.py tests/test_graficos.py tests/test_importacao_csv.py tests/test_gestao_escalas_web.py -q)",
+      "Bash(rm dados/escala.sqlite3.antes-3.3.1.bak)",
+      "Bash(git checkout *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\cesar\\AppData\\Local\\Temp\\claude\\c--Users-cesar-OneDrive-Documentos-projetos-escala\\9fbfa581-3529-44c1-8afc-0ec33252d2e7\\scratchpad"

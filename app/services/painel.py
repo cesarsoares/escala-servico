@@ -157,16 +157,32 @@ def alertas(db: Session, hoje: date, dias: int = HORIZONTE_DIAS) -> Alertas:
     ]
     a.efetivo_curto.sort(key=lambda x: x["dia"])
 
-    # (c) escala que não tem como rodar: menos participantes que vagas (regra 7.8)
-    participantes = dict(db.execute(
-        select(Participacao.escala_id, func.count())
-        .where(Participacao.ativo.is_(True)).group_by(Participacao.escala_id)).all())
+    # (c) escala que não tem como rodar: menos participantes que vagas (regra 7.8).
+    # A conta é POR COR (regra 3.3.1): quem só concorre na vermelha não sustenta
+    # a preta, e uma soma única esconderia exatamente esse buraco.
+    def conta_por_escala(condicao):
+        return dict(db.execute(
+            select(Participacao.escala_id, func.count())
+            .where(Participacao.ativo.is_(True), condicao)
+            .group_by(Participacao.escala_id)).all())
+
+    na_preta = conta_por_escala(Participacao.serve_preta.is_(True))
+    na_vermelha = conta_por_escala(Participacao.serve_vermelha.is_(True))
     for escala in db.scalars(select(Escala).where(Escala.ativa.is_(True)).order_by(Escala.nome)):
         vagas = postos_por_escala.get(escala.id, 0)
-        gente = participantes.get(escala.id, 0)
-        if gente < vagas:
+        curtas = [
+            (cor, quantos.get(escala.id, 0))
+            for cor, roda, quantos in (("preta", escala.tem_preta, na_preta),
+                                       ("vermelha", escala.tem_vermelha, na_vermelha))
+            if roda and quantos.get(escala.id, 0) < vagas   # cor que não roda não tem buraco (4.5)
+        ]
+        # Faltando o mesmo nas duas cores, é falta de gente na escala e não
+        # restrição de cor: uma linha só, sem repetir o mesmo aviso duas vezes.
+        if len(curtas) == 2 and curtas[0][1] == curtas[1][1]:
+            curtas = [("", curtas[0][1])]
+        for cor, gente in curtas:
             a.mal_configuradas.append({
-                "escala": escala.nome, "escala_id": escala.id,
+                "escala": escala.nome, "escala_id": escala.id, "cor": cor,
                 "participantes": gente, "postos": vagas,
             })
     return a
@@ -390,6 +406,10 @@ class LugarNaFila:
     servicos: int
     pct: int              # largura da barra, relativa a quem mais serviu
     proximo: bool         # está no menor número de serviços do grupo
+    # Regra 3.3.1: 'só preta'/'só vermelha' quando concorre em uma cor apenas.
+    # Sem isso o ranking parece injustiça — quem só entra no fim de semana serve
+    # menos por definição, e a barra curta não explicaria por quê.
+    restricao: str = ""
 
 
 def fila_por_servicos(db: Session, escala_id: int, inicio: date, fim: date) -> list[LugarNaFila]:
@@ -401,16 +421,21 @@ def fila_por_servicos(db: Session, escala_id: int, inicio: date, fim: date) -> l
     impedimento e antiguidade — por isso a tela chama isto de leitura, não de
     previsão.
     """
-    participantes = db.scalars(
-        select(Militar)
+    linhas = db.execute(
+        select(Militar, Participacao.serve_preta, Participacao.serve_vermelha)
         .join(Participacao, Participacao.militar_id == Militar.id)
         .where(Participacao.escala_id == escala_id, Participacao.ativo.is_(True),
                Militar.ativo.is_(True))
         .options(joinedload(Militar.posto_graduacao))
         .order_by(Militar.nome_guerra)
     ).all()
+    participantes = [linha[0] for linha in linhas]
     if not participantes:
         return []
+    restricao = {                                          # regra 3.3.1
+        m.id: "" if preta and vermelha else ("só preta" if preta else "só vermelha")
+        for m, preta, vermelha in linhas
+    }
 
     contagem = dict(db.execute(
         select(Servico.militar_id, func.count())
@@ -430,6 +455,7 @@ def fila_por_servicos(db: Session, escala_id: int, inicio: date, fim: date) -> l
             # invisível não comunica "este é o próximo".
             pct=6 if not maximo or not quantos[m.id] else max(6, round(quantos[m.id] * 100 / maximo)),
             proximo=quantos[m.id] == minimo,
+            restricao=restricao[m.id],
         )
         for m in ordenados
     ]

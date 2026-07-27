@@ -372,9 +372,19 @@ def posto_remover(
 
 
 # --- Participantes (regra 3.3; isenção permanente = não-participação, 7.6) ----
+def _cores_do_form(cores: str) -> tuple[bool, bool]:
+    """Traduz o select de cores da participação (regra 3.3.1).
+
+    Valor desconhecido cai em 'ambas', que é o padrão da regra — nunca em
+    'nenhuma', que seria participar sem concorrer.
+    """
+    return {"preta": (True, False), "vermelha": (False, True)}.get(cores, (True, True))
+
+
 @router.post("/escalas/{escala_id}/participantes", response_class=HTMLResponse)
 def participante_adicionar(
     escala_id: int, request: Request, militar_id: str = Form(""),
+    cores: str = Form("ambas"),
     db: Session = Depends(get_db), gestor: Usuario = Depends(gestor_web),
 ):
     escala = _obter_escala(db, escala_id)
@@ -389,10 +399,12 @@ def participante_adicionar(
         return _tela_escala(request, db, gestor, escala, "Militar inexistente.",
                             status=400, aba="participantes")
 
+    preta, vermelha = _cores_do_form(cores)
     vinculo = db.scalar(select(Participacao).where(
         Participacao.escala_id == escala_id, Participacao.militar_id == mid))
     if vinculo is None:
-        vinculo = Participacao(escala_id=escala_id, militar_id=mid, ativo=True)
+        vinculo = Participacao(escala_id=escala_id, militar_id=mid, ativo=True,
+                               serve_preta=preta, serve_vermelha=vermelha)
         db.add(vinculo)
         db.flush()
         auditoria.registrar(db, usuario_id=gestor.id, entidade="participacao",
@@ -402,6 +414,7 @@ def participante_adicionar(
         # vínculo antigo desativado: reativar preserva o histórico e a vez na fila
         antes = auditoria.snapshot(vinculo)
         vinculo.ativo = True
+        vinculo.serve_preta, vinculo.serve_vermelha = preta, vermelha
         db.flush()
         auditoria.registrar(db, usuario_id=gestor.id, entidade="participacao",
                             entidade_id=vinculo.id, acao="alterar", antes=antes,
@@ -430,6 +443,33 @@ def participante_isentar(
                             depois=auditoria.snapshot(vinculo))
         db.commit()
     return RedirectResponse(f"/gestao/escalas/{escala_id}?ok=participante-isento#participantes", status_code=303)
+
+
+@router.post("/escalas/{escala_id}/participantes/{militar_id}/cores")
+def participante_cores(
+    escala_id: int, militar_id: int, cores: str = Form("ambas"),
+    db: Session = Depends(get_db), gestor: Usuario = Depends(gestor_web),
+):
+    """Em que cores este militar concorre nesta escala (regra 3.3.1).
+
+    Não mexe no que já está gravado: quem foi escalado num dia continua
+    escalado. A restrição vale da próxima escalação em diante — como toda
+    mudança de configuração da escala.
+    """
+    vinculo = db.scalar(select(Participacao).where(
+        Participacao.escala_id == escala_id, Participacao.militar_id == militar_id))
+    if vinculo is not None:
+        preta, vermelha = _cores_do_form(cores)
+        if (preta, vermelha) != (vinculo.serve_preta, vinculo.serve_vermelha):
+            antes = auditoria.snapshot(vinculo)
+            vinculo.serve_preta, vinculo.serve_vermelha = preta, vermelha
+            db.flush()
+            auditoria.registrar(db, usuario_id=gestor.id, entidade="participacao",
+                                entidade_id=vinculo.id, acao="alterar", antes=antes,
+                                depois=auditoria.snapshot(vinculo))
+            db.commit()
+    return RedirectResponse(f"/gestao/escalas/{escala_id}?ok=participante-cores#participantes",
+                            status_code=303)
 
 
 # --- Concorrência entre escalas (regra 7.4.1) --------------------------------

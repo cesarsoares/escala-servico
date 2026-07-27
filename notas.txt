@@ -1,1 +1,5 @@
-1. Preta e vermelha — o que são, exatamente? A escala preta são os num dia de semana e a escala vermelha são finais de semana e feriados
+Um militar pode participar somente na escala vermelha. Por exemplo. A função do Tenente Epson o impede de prestar serviço nos dias de semana, de modo que somente será escalado nos finais de semana.
+
+Menu lateral para escalas
+
+A importação de arquivos .csv persiste com os militares registrados no sistema? Exemplo: Ao importar a escala de serviço para termos histórico, o sargento joão aparece nos dados da planilha, mas não tem registro no sistema. 

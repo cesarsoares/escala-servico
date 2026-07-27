@@ -17,8 +17,12 @@ def fila_ordenada(participacoes: list[Participacao], cor: Cor) -> list[Participa
 
     Regra 6.2: 'mais folgado' = serviu há mais tempo naquela cor (data mais antiga).
     Quem nunca serviu (None) vai para o topo. Regra 6.3/seção 9: desempate.
+
+    Quem não concorre nesta cor (regra 3.3.1) fica FORA da fila — não é o mesmo
+    que ser pulado por impedimento (6.4): ali o militar guarda a vez, aqui ele
+    nunca teve vez nesta cor.
     """
-    ativos = [p for p in participacoes if p.ativo]  # regra 7.6
+    ativos = [p for p in participacoes if p.ativo and p.serve_cor(cor)]  # regras 7.6 e 3.3.1
 
     def chave(p: Participacao):
         return p.ultimo_na_cor(cor) or _data_minima()

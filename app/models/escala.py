@@ -81,6 +81,8 @@ class Participacao(Base):
     __tablename__ = "participacao"
     __table_args__ = (
         UniqueConstraint("militar_id", "escala_id", name="uq_participacao_militar_escala"),
+        # regra 3.3.1: participar sem concorrer em cor nenhuma seria não participar
+        CheckConstraint("serve_preta OR serve_vermelha", name="ck_participacao_cor"),
         Index("ix_participacao_escala", "escala_id",  # participantes ativos da escala (parcial)
               postgresql_where=text("ativo"), sqlite_where=text("ativo")),
     )
@@ -91,5 +93,13 @@ class Participacao(Base):
     escala_id: Mapped[int] = mapped_column(
         ForeignKey("escala.id", ondelete="CASCADE"), nullable=False)
     ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=true())
+    # Regra 3.3.1 — em que cores ESTE militar concorre nesta escala. Não se
+    # confunde com `escala.tem_preta/tem_vermelha` (4.2), que é em que cores a
+    # ESCALA roda: aqui a escala roda as duas e a pessoa concorre em uma só
+    # (função que impede serviço em dia útil).
+    serve_preta: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=true())
+    serve_vermelha: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=true())
 
     escala: Mapped[Escala] = relationship(back_populates="participacoes")

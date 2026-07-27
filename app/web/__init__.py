@@ -83,6 +83,8 @@ AVISOS = {
     "posto-removido": "Posto removido.",
     "participante-incluido": "Militar incluído na escala.",
     "participante-isento": "Militar isento desta escala — deixa de concorrer na fila.",
+    "participante-cores": "Cores da participação salvas. Vale da próxima escalação "
+                          "em diante (regra 3.3.1).",
     "concorrencia-criada": "Concorrência declarada. Vale nos dois sentidos.",
     "concorrencia-removida": "Concorrência desfeita.",
     "feriado-criado": "Feriado cadastrado.",

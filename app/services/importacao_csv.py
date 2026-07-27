@@ -35,6 +35,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.domain.calendario import classificar_dia
+from app.domain.models import Cor
 from app.models.escala import Escala, Participacao, Posto
 from app.models.militar import Militar
 from app.models.referencia import OrganizacaoMilitar
@@ -151,8 +152,9 @@ def ler(db: Session, conteudo: bytes) -> Leitura:
     for m in db.scalars(select(Militar)):
         por_nome.setdefault(_chave(m.nome_guerra), []).append(m)
 
+    # (escala, militar) -> em que cores concorre hoje (regra 3.3.1)
     participantes = {
-        (p.escala_id, p.militar_id)
+        (p.escala_id, p.militar_id): (p.serve_preta, p.serve_vermelha)
         for p in db.scalars(select(Participacao).where(Participacao.ativo.is_(True)))
     }
     ja_no_banco = {
@@ -245,7 +247,33 @@ def ler(db: Session, conteudo: bytes) -> Leitura:
             continue
         vistos[chave] = numero
 
+    _avisar_cor_restrita(db, leitura, participantes)
     return leitura
+
+
+def _avisar_cor_restrita(db: Session, leitura: Leitura, participantes: dict) -> None:
+    """Serviço em cor de que o militar hoje não participa (regra 3.3.1).
+
+    É AVISO, não recusa, pela mesma razão de quem já saiu da escala: o serviço
+    aconteceu. Mas costuma denunciar arquivo trocado ou participação mal
+    configurada, e calar seria esconder isso. A cor sai do calendário da OM,
+    nunca do arquivo (regra 5) — é a mesma classificação que `aplicar` usará.
+    """
+    aceitas = [linha for linha in leitura.aceitas if linha.dia]
+    if not aceitas:
+        return
+    dias = [linha.dia for linha in aceitas]
+    feriados = calendario_service.feriados(db, min(dias), max(dias))
+    ov_verm = calendario_service.overrides_vermelha(db, min(dias), max(dias))
+    ov_preta = calendario_service.overrides_preta(db, min(dias), max(dias))
+    for linha in aceitas:
+        cores = participantes.get((linha.escala_id, linha.militar_id))
+        if cores is None:
+            continue                     # já avisado: não é participante ativo
+        serve_preta, serve_vermelha = cores
+        cor = classificar_dia(linha.dia, feriados, ov_verm, ov_preta)
+        if not (serve_preta if cor is Cor.PRETA else serve_vermelha):
+            linha.avisos.append(f"hoje não concorre na {cor.value} nesta escala")
 
 
 def aplicar(db: Session, leitura: Leitura) -> int:

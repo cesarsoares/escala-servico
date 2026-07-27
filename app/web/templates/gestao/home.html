@@ -121,8 +121,10 @@
 <ul class="avisos">
   {% for a in alertas.mal_configuradas %}
     <li><a href="/gestao/escalas/{{ a.escala_id }}">{{ a.escala }}</a> tem
-        {{ a.participantes }} participante(s) para {{ a.postos }} vaga(s) por dia —
-        não há como fechar o dia (regra 7.8).</li>
+        {{ a.participantes }} participante(s){% if a.cor %} concorrendo na
+        <strong>{{ a.cor }}</strong>{% endif %} para {{ a.postos }} vaga(s) por dia —
+        não há como fechar o dia (regra 7.8){% if a.cor %}; confira quem participa
+        só de uma cor (regra 3.3.1){% endif %}.</li>
   {% endfor %}
 </ul>
 {% endif %}

@@ -99,10 +99,11 @@ def participacoes_da_escala(
     `ate_dia` é o dia-alvo (exclusivo): a fila só olha o histórico anterior.
     """
     parts = session.execute(
-        select(Participacao.militar_id, Participacao.ativo)
+        select(Participacao.militar_id, Participacao.ativo,
+               Participacao.serve_preta, Participacao.serve_vermelha)   # regra 3.3.1
         .where(Participacao.escala_id == escala_id)
     ).all()
-    ids = [mid for mid, _ in parts]
+    ids = [p.militar_id for p in parts]
     if not ids:
         return []
 
@@ -129,13 +130,15 @@ def participacoes_da_escala(
 
     return [
         ParticipacaoDom(
-            militar=militar_para_dominio(militares[mid]),
+            militar=militar_para_dominio(militares[p.militar_id]),
             escala_id=escala_id,
-            ultima_preta=idx.get((mid, Cor.PRETA)),
-            ultima_vermelha=idx.get((mid, Cor.VERMELHA)),
-            ativo=ativo,
+            ultima_preta=idx.get((p.militar_id, Cor.PRETA)),
+            ultima_vermelha=idx.get((p.militar_id, Cor.VERMELHA)),
+            ativo=p.ativo,
+            serve_preta=p.serve_preta,
+            serve_vermelha=p.serve_vermelha,
         )
-        for mid, ativo in parts
+        for p in parts
     ]
 
 

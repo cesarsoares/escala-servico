@@ -173,6 +173,11 @@ correspondente, citando o número.
   dia X").
 - **Escalas concorrentes**: relação **explícita e simétrica** declarada pelo
   gestor; é o que faz as escalas conversarem via folga mínima.
+- **Participação restrita a uma cor (regra 3.3.1)**: o participante concorre nas
+  duas cores (padrão) ou **em uma só** — o militar cuja função o impede de servir
+  em dia útil participa da escala e só entra na fila da vermelha. **Não confundir
+  com a cor da ESCALA** (4.2/4.5, o Museu): ali a escala não roda na preta; aqui
+  ela roda e é a **pessoa** que concorre em uma cor.
 - **Impedimento**: dispensa/férias/curso/operação. O militar é **pulado** no
   período mas **mantém a vez** (a fila não muda de ordem).
 - **Isenção permanente**: feita por **não-participação** na escala (não há campo
@@ -693,14 +698,68 @@ Com a aba Configurações foi preciso apertar o padding (11→9px), encurtar
 "Escalar período" → "Escalar" e **não** pôr o Manual ali (ele está no rodapé de
 todas as telas). Cada aba nova custa espaço de todas.
 
+## Participação por cor + cortina de escalas (feito — 2026-07-27)
+
+Dois pedidos anotados pelo usuário no `notas.txt`. Testes em
+`tests/test_participacao_por_cor.py`.
+
+**1. Regra 3.3.1 — participante que só concorre numa cor.** Escrita no `docs/`
+(portanto **pendente de validação do Brigada**, como as outras duas em aberto).
+`participacao` ganhou `serve_preta`/`serve_vermelha` (default TRUE, `CHECK` de
+ao menos uma), migração `e2b6d1a7c9f3`. O filtro entra num ponto só —
+`motor.fila_ordenada` —, e a diferença que importa está no docstring: quem não
+concorre na cor **fica fora da fila**, não é "pulado" como no impedimento
+(6.4); ele nunca teve vez ali. **A folga mínima não muda**: sai de uma fila, não
+fica disponível a qualquer hora na outra.
+
+- A escolha ficou **no vínculo, não na pessoa** (decisão do usuário): é onde o
+  gestor já administra participantes, e o mesmo militar pode ter arranjos
+  diferentes em escalas diferentes.
+- A tela só pergunta a cor quando a **escala roda as duas** — no Museu a
+  pergunta não teria resposta.
+- Valor desconhecido no form cai em **ambas**, nunca em "nenhuma": a URL não
+  pode fabricar participante que não concorre em cor alguma.
+- **O alerta de efetivo curto do painel virou por cor** (7.8): somar as duas
+  esconderia exatamente o buraco que a restrição cria. Faltando o mesmo nas
+  duas, sai **um aviso só** — aí é falta de gente, não restrição de cor.
+- A **Fila** da tela da escala marca "só vermelha": barra curta sem explicação
+  parece injustiça na leitura de equidade.
+- O **CSV de histórico avisa** (não recusa) quando o serviço importado é de cor
+  que o militar hoje não concorre — fato consumado, mas costuma denunciar
+  arquivo trocado.
+
+**2. Cortina de escalas na consulta.** `<details>/<summary>` nativo, **zero
+JavaScript** (decisão do usuário entre as três opções): o projeto continua sem
+uma linha de JS, e teclado/leitor de tela funcionam de graça. Vale só para a
+consulta — a gestão tem a lista própria em `/gestao/escalas`.
+
+> Com a lista recolhida, **o resumo precisa dizer qual escala está na tela** —
+> era o chip marcado que fazia isso. Sem essa parte, a cortina troca poluição
+> por desorientação.
+
+## ⚠️ Existem DOIS bancos nesta máquina
+
+Descoberto ao migrar em 27/07 e fácil de tropeçar de novo:
+
+- `./escala.sqlite3` (raiz) é o do **desenvolvimento local** — é o que
+  `app/config.py` usa por padrão (`sqlite:///./escala.sqlite3`) e o que o
+  `alembic` da linha de comando migra;
+- `./dados/escala.sqlite3` é o **do container** (volume do compose), migrado
+  pelo entrypoint.
+
+Os dois têm os 285 militares reais, mas **não** o mesmo número de serviços.
+`alembic current` dizendo `head` enquanto `dados/escala.sqlite3` segue na
+revisão antiga não é bug: são bancos diferentes.
+
 ## Próximos passos sugeridos
 
 1. **WeasyPrint gerando o PDF pelo servidor** — já está instalado na imagem
    (entrou junto com as libs do Pango); falta a rota que renderiza
    `impressao.html` (e agora também `manual.html`) com ele, em vez de depender
    do "salvar como PDF" do navegador.
-2. Validar com o Brigada as duas mudanças de regra em aberto: a remoção da
-   previsão (afeta a regra 10) e o override para **preta**, que generaliza a 5.3.
+2. Validar com o Brigada as mudanças de regra em aberto: a remoção da previsão
+   (afeta a regra 10), o override para **preta** (generaliza a 5.3) e a
+   **participação restrita a uma cor (3.3.1)**, escrita em 27/07.
 3. Assistente de primeira execução: hoje Configurações + importação já dão conta
    de instalar numa OM nova, mas o caminho precisa ser descoberto pelo gestor.
 4. Fase 2: módulo de representação.

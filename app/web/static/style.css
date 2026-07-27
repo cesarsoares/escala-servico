@@ -112,7 +112,27 @@ code { background:#e7ebf1; padding:1px 6px; border-radius:5px; font-size:.9em; f
 .sub { color:var(--tinta-3); font-size:13px; }
 p.sub { margin:4px 0 16px; max-width:74ch; line-height:1.6; }
 
-/* --- consulta: seletor de escalas e navegação de mês ------------------------ */
+/* --- consulta: cortina de escalas e navegação de mês ------------------------
+   A cortina é um <details> nativo — sem JavaScript, com teclado e leitor de
+   tela de graça. Fechada, o resumo precisa dizer QUAL escala está na tela:
+   é a informação que o chip marcado dava. */
+.menu-escalas { margin-bottom:18px; border:1px solid var(--borda); border-radius:var(--raio);
+                background:var(--papel); box-shadow:var(--sombra); }
+.menu-escalas > summary { list-style:none; cursor:pointer; padding:11px 16px;
+                          display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+                          border-radius:var(--raio); }
+.menu-escalas > summary::-webkit-details-marker { display:none; }
+/* Seta desenhada por nós: a do navegador varia demais entre plataformas. */
+.menu-escalas > summary::before { content:"▸"; color:var(--azul); font-size:13px;
+                                  transition:transform .12s; display:inline-block; }
+.menu-escalas[open] > summary::before { transform:rotate(90deg); }
+.menu-escalas > summary:hover { background:var(--cinza); }
+.menu-escalas > summary .rotulo { font-weight:600; color:var(--azul); font-size:13.5px; }
+.menu-escalas > summary .conta { font-family:var(--mono); font-size:12px; color:var(--tinta-3); }
+.menu-escalas > summary .atual { color:var(--tinta-2); font-size:13.5px; }
+.menu-escalas > summary .atual::before { content:"— "; color:var(--tinta-3); }
+.menu-escalas .escalas { padding:0 16px 14px; margin:0; }
+
 .escalas { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
 .chip { padding:8px 16px; border:1px solid var(--borda); border-radius:var(--pill);
         background:var(--papel); color:var(--tinta-2); text-decoration:none; font-size:13.5px;

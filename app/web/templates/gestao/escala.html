@@ -93,11 +93,19 @@ guarda pode ter doze. O rótulo é opcional e sai no documento impresso.</p>
   <button type="submit" class="secundario">+ Acrescentar posto</button>
 </form>
 
+{# `duas_cores`: só faz sentido escolher a cor da participação quando a escala
+   roda as duas. Numa escala só-vermelha (Museu, regra 4.5) a coluna seria uma
+   pergunta sem resposta possível. #}
+{% set duas_cores = escala.tem_preta and escala.tem_vermelha %}
 <h3 id="participantes">Participantes ({{ participantes_ativos }})</h3>
 <p class="sub">Quem concorre na fila desta escala (regra 3.3). Quem não deve concorrer
-simplesmente não participa — é assim que se faz a isenção permanente (regra 7.6).</p>
+simplesmente não participa — é assim que se faz a isenção permanente (regra 7.6).
+{% if duas_cores %}Quem tem função que o impede de servir em dia útil participa
+<strong>só na vermelha</strong> (regra 3.3.1): sai da fila da preta, mas a folga
+mínima continua valendo em qualquer cor.{% endif %}</p>
 <table class="tabela">
-  <thead><tr><th>Militar</th><th>Posto/Grad</th><th>OM</th><th></th></tr></thead>
+  <thead><tr><th>Militar</th><th>Posto/Grad</th><th>OM</th>
+    {% if duas_cores %}<th>Concorre em</th>{% endif %}<th></th></tr></thead>
   <tbody>
   {% for vinculo, m in participantes %}
     <tr class="{{ '' if vinculo.ativo else 'inativa' }}">
@@ -105,6 +113,21 @@ simplesmente não participa — é assim que se faz a isenção permanente (regr
         {% if not vinculo.ativo %}<span class="tag tag-excluir">isento</span>{% endif %}</td>
       <td>{{ m.posto_graduacao.sigla }}</td>
       <td>{{ m.om.sigla }}</td>
+      {% if duas_cores %}
+        <td>
+          {% if vinculo.ativo %}
+            <form method="post" class="em-linha"
+                  action="/gestao/escalas/{{ escala.id }}/participantes/{{ m.id }}/cores">
+              <select name="cores" aria-label="Cores em que {{ m.nome_guerra }} concorre">
+                <option value="ambas" {{ 'selected' if vinculo.serve_preta and vinculo.serve_vermelha }}>as duas</option>
+                <option value="preta" {{ 'selected' if vinculo.serve_preta and not vinculo.serve_vermelha }}>só preta</option>
+                <option value="vermelha" {{ 'selected' if vinculo.serve_vermelha and not vinculo.serve_preta }}>só vermelha</option>
+              </select>
+              <button class="mini secundario" type="submit">salvar</button>
+            </form>
+          {% endif %}
+        </td>
+      {% endif %}
       <td>
         {% if vinculo.ativo %}
           <form method="post" action="/gestao/escalas/{{ escala.id }}/participantes/{{ m.id }}/isentar"
@@ -114,7 +137,7 @@ simplesmente não participa — é assim que se faz a isenção permanente (regr
       </td>
     </tr>
   {% else %}
-    <tr><td colspan="4" class="sub">Nenhum militar participa desta escala ainda.</td></tr>
+    <tr><td colspan="{{ 5 if duas_cores else 4 }}" class="sub">Nenhum militar participa desta escala ainda.</td></tr>
   {% endfor %}
   </tbody>
 </table>
@@ -128,6 +151,14 @@ simplesmente não participa — é assim que se faz a isenção permanente (regr
         </optgroup>
       {% endfor %}
     </select></label>
+  {% if duas_cores %}
+    <label>Concorre em
+      <select name="cores">
+        <option value="ambas">as duas cores</option>
+        <option value="preta">só preta (dias úteis)</option>
+        <option value="vermelha">só vermelha (fim de semana e feriado)</option>
+      </select></label>
+  {% endif %}
   <button type="submit" class="secundario">+ Incluir na escala</button>
 </form>
 
@@ -180,6 +211,7 @@ relação é simétrica — declarada aqui, vale nos dois sentidos.</p>
       <span class="pos">{{ loop.index }}</span>
       <span class="quem">{{ lugar.militar.nome_guerra }}
         <span class="g">{{ lugar.militar.posto_graduacao.sigla }}</span>
+        {%- if lugar.restricao %}<span class="restr">{{ lugar.restricao }}</span>{% endif %}
         {%- if lugar.proximo %}<span class="prox">menos serviços</span>{% endif %}</span>
       <span class="rk-bar"><i style="width:{{ lugar.pct }}%"></i></span>
       <span class="rk-n">{{ lugar.servicos }}</span>
