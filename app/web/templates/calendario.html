@@ -4,16 +4,23 @@
 {% if not escalas %}
   <section class="aviso"><p>Nenhuma escala cadastrada ainda.</p></section>
 {% else %}
-{# Cortina de escalas (<details> nativo: sem JavaScript, funciona no teclado e
-   no leitor de tela). Uma OM pode ter dezenas de escalas — em linha, os chips
-   quebravam em três faixas e empurravam o calendário para fora da tela. Com a
-   lista recolhida, o RESUMO tem de dizer qual escala está sendo exibida: é o
-   que o chip marcado fazia. #}
-<details class="menu-escalas">
-  <summary>
-    <span class="rotulo">Escalas <span class="conta">{{ escalas|length }}</span></span>
-    <span class="atual">{{ escala.nome }}</span>
-  </summary>
+{# Menu lateral em cortina: fica fora da tela e desliza pela seta. Uma OM pode
+   ter dezenas de escalas — em linha, os chips quebravam em três faixas e
+   empurravam o calendário para fora da tela.
+
+   O <noscript> devolve a lista ao topo da página: sem JavaScript a cortina não
+   abre, e uma consulta ABERTA (regra 13.1) não pode esconder as outras escalas
+   de quem estiver num navegador com script desligado. #}
+<aside id="menu-escalas" class="menu-escalas" aria-label="Escalas">
+  {# A aba é o único ponto de entrada da cortina: sem a palavra escrita, ninguém
+     adivinha o que a seta abre. #}
+  <button type="button" id="puxador-escalas" class="puxador"
+          aria-controls="menu-escalas" aria-expanded="false"
+          aria-label="Abrir a lista de escalas">
+    <span class="rotulo-puxador">Escalas</span>
+    <span class="seta-puxador" aria-hidden="true">&#9658;</span>
+  </button>
+  <p class="menu-titulo">Escalas <span class="conta">{{ escalas|length }}</span></p>
   <nav class="escalas">
     {% for e in escalas %}
       <a href="/?escala_id={{ e.id }}&ano={{ ano }}&mes={{ mes }}"
@@ -21,11 +28,30 @@
          {{ 'aria-current=page' if e.id == escala.id }}>{{ e.nome }}</a>
     {% endfor %}
   </nav>
-</details>
+</aside>
+<noscript>
+  <style>
+    .menu-escalas { position:static; width:auto; height:auto; padding:14px 16px;
+                    background:var(--papel); color:var(--tinta); box-shadow:var(--sombra);
+                    border:1px solid var(--borda); border-radius:var(--raio);
+                    margin-bottom:18px; }
+    .menu-escalas .puxador { display:none; }
+    .menu-escalas .menu-titulo { color:var(--azul); }
+    .menu-escalas .escalas { flex-direction:row; flex-wrap:wrap; padding:0;
+                             max-height:none; overflow:visible; }
+    .menu-escalas .chip { background:var(--papel); color:var(--tinta-2);
+                          border-color:var(--borda); }
+    .menu-escalas .chip.ativo { background:var(--azul); color:#fff; }
+  </style>
+</noscript>
 
 <div class="mes-nav">
   <a class="seta" href="/?escala_id={{ escala.id }}&ano={{ prev[0] }}&mes={{ prev[1] }}">&larr;</a>
-  <h2>{{ mes_nome|capitalize }} / {{ ano }}</h2>
+  {# Com a cortina fechada, é este título que diz de qual escala é o mês —
+     antes era o chip marcado. O mês continua em primeiro plano: as setas ao
+     lado navegam meses, não escalas. #}
+  <h2><span class="de-qual-escala">{{ escala.nome }}</span>
+      {{ mes_nome|capitalize }} / {{ ano }}</h2>
   <a class="seta" href="/?escala_id={{ escala.id }}&ano={{ prox[0] }}&mes={{ prox[1] }}">&rarr;</a>
   <a class="botao imprimir" href="/escalas/{{ escala.id }}/impressao?ano={{ ano }}&mes={{ mes }}">
     Versão para impressão</a>
@@ -55,4 +81,11 @@
   <span class="fer">•</span> feriado
 </p>
 {% endif %}
+{% endblock %}
+
+{% block cabeca %}
+  {# Único JavaScript do sistema, e é nosso: abre, fecha e LEMBRA a cortina.
+     Sem biblioteca e sem CDN — a rede da OM pode não ter internet. Sem `defer`
+     porque ele precisa marcar o estado antes da página ser desenhada. #}
+  <script src="/static/menu.js"></script>
 {% endblock %}

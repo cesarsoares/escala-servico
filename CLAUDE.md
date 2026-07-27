@@ -95,6 +95,8 @@ app/
     importacao_csv.py Carga do histórico de serviços (conferir -> confirmar).
   api/        <- Rotas HTTP.
   web/        <- Telas (Jinja + estáticos): consulta aberta + /gestao + /manual.
+                 static/menu.js é o ÚNICO JavaScript, e é nosso (cortina de
+                 escalas da consulta). Nada de biblioteca nem CDN.
   pdf/        <- Exportação PDF (WeasyPrint). STUB.
 tests/        <- Testes do domínio (passando).
 docs/         <- Regras completas (.md e .pdf). FONTE DA VERDADE.
@@ -728,14 +730,39 @@ fica disponível a qualquer hora na outra.
   que o militar hoje não concorre — fato consumado, mas costuma denunciar
   arquivo trocado.
 
-**2. Cortina de escalas na consulta.** `<details>/<summary>` nativo, **zero
-JavaScript** (decisão do usuário entre as três opções): o projeto continua sem
-uma linha de JS, e teclado/leitor de tela funcionam de graça. Vale só para a
-consulta — a gestão tem a lista própria em `/gestao/escalas`.
+**2. Menu lateral em cortina na consulta.** Primeira versão saiu em
+`<details>` sem JS; o usuário pediu a **cortina lateral deslizante** (mandou um
+HTML de referência), e é o que está no ar: `aside.menu-escalas` fixo fora da
+tela, aba com o rótulo **ESCALAS** na **altura do meio** da janela, lista
+vertical com o nome de cada escala. Vale só para a consulta — a gestão tem a
+lista própria em `/gestao/escalas`.
 
-> Com a lista recolhida, **o resumo precisa dizer qual escala está na tela** —
-> era o chip marcado que fazia isso. Sem essa parte, a cortina troca poluição
-> por desorientação.
+- **`static/menu.js` é o ÚNICO JavaScript do sistema**, e é nosso: sem
+  biblioteca, sem CDN (a rede da OM pode não ter internet). Carregado só na
+  consulta, pelo `{% block cabeca %}` novo do `base.html` — **no `<head>` e sem
+  `defer`**, de propósito (ver abaixo).
+- **A cortina fica aberta até alguém fechar.** Escolher uma escala **recarrega a
+  página**, então o estado vive no `localStorage` e é reposto como classe
+  `cortina-aberta` no `<html>` **antes do primeiro traço na tela** — daí o
+  script no `<head>`. Com `defer`, o menu piscaria fechado a cada troca de mês.
+- **Aberta, ela EMPURRA a página** (`padding-left` no `body`) em vez de tapá-la:
+  ficando aberta o tempo todo, cobrir a primeira coluna esconderia o domingo,
+  que é dia de escala vermelha. Abaixo de 900px volta a sobrepor.
+- **A lista rola sozinha** (`max-height:calc(100vh - 90px)`), com `overflow-x`
+  travado — `overflow-y:auto` liga o eixo x junto e aparecia uma barra
+  horizontal. Título e puxador ficam fora da rolagem. Conferido com 30 escalas.
+- **O `<noscript>` do template devolve a lista ao topo da página.** A consulta é
+  aberta (13.1): sem script, o visitante não pode ficar sem as outras escalas.
+- **`overflow` no menu recorta o puxador**, que por definição vive fora dele — e
+  aí não há como abrir a cortina. A rolagem fica na LISTA. Foi assim que a
+  primeira captura saiu sem botão nenhum.
+- A aba traz a **palavra escrita**, não só a seta: é o único ponto de entrada.
+- Com a cortina fechada, **quem diz de qual escala é o mês é o título**
+  (`.de-qual-escala`) — antes era o chip marcado. Sem isso, a cortina troca
+  poluição por desorientação.
+- `tools/exportar_interface.py`: a constante virou **`ESTATICOS`** e inclui o
+  `menu.js`. Sem isso a tela exportada abre sem a cortina — o mesmo tropeço que
+  a folha `graficos.css` já tinha causado.
 
 ## ⚠️ Existem DOIS bancos nesta máquina
 

@@ -191,9 +191,15 @@ A página inicial mostra o **calendário do mês** de uma escala, com o
 posto/graduação e o nome de quem serve em cada dia. Não exige login (regra 13.1)
 — é para todo o efetivo consultar.
 
-Para trocar de escala, abra a cortina **Escalas** no alto da página: ela fica
-recolhida para não empurrar o calendário para baixo, e mostra ao lado do título
-qual escala está sendo exibida.
+Para trocar de escala, clique na aba **ESCALAS**, na borda esquerda da tela, na
+altura do meio: o menu desliza mostrando todas as escalas, e a que está aberta
+aparece destacada.
+
+**O menu fica aberto até você fechar** — clicar numa escala não o recolhe, o que
+permite passar de uma para outra sem reabrir toda vez. Para fechar, clique na
+aba de novo (ou tecle `Esc`). Com o menu fechado, o nome da escala em exibição
+continua no título, acima do mês. Numa OM com muitas escalas, a lista rola
+dentro do próprio menu.
 
 Os dias de **escala vermelha** aparecem na cor da OM. A cor nunca é a única
 informação: sábado e domingo vêm escritos no cabeçalho, e o feriado tem marca

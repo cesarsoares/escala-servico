@@ -8,6 +8,10 @@
   {# Folha dos gráficos: só nas telas que têm um. Vem DEPOIS da principal,
      porque reusa os tokens dela. #}
   {% block estilos %}{% endblock %}
+  {# Script da tela, quando houver. Vai no <head> de propósito: a cortina de
+     escalas lembra se estava aberta, e aplicar isso depois da página desenhada
+     faria o menu piscar fechado a cada troca de mês. #}
+  {% block cabeca %}{% endblock %}
 </head>
 <body>
   <header class="topo">

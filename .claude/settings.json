@@ -37,7 +37,9 @@
       "Bash(python -m pytest tests/test_participacao_por_cor.py::test_sabado_escala_o_restrito_normalmente -q)",
       "Bash(python -m pytest tests/test_schema_sincronizado.py tests/test_painel.py tests/test_graficos.py tests/test_importacao_csv.py tests/test_gestao_escalas_web.py -q)",
       "Bash(rm dados/escala.sqlite3.antes-3.3.1.bak)",
-      "Bash(git checkout *)"
+      "Bash(git checkout *)",
+      "Bash(python -m pytest tests/test_participacao_por_cor.py tests/test_api_consulta.py tests/test_impressao.py tests/test_ajustes_0726.py -q)",
+      "Bash(python -m pytest tests/test_participacao_por_cor.py tests/test_api_consulta.py -q)"
     ],
     "additionalDirectories": [
       "C:\\Users\\cesar\\AppData\\Local\\Temp\\claude\\c--Users-cesar-OneDrive-Documentos-projetos-escala\\9fbfa581-3529-44c1-8afc-0ec33252d2e7\\scratchpad"

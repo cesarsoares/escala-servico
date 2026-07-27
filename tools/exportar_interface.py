@@ -35,9 +35,11 @@ from app.seeds.usuario import criar_ou_atualizar_gestor
 
 RAIZ = Path(__file__).resolve().parent.parent
 SENHA = "senha-de-demonstracao"
-# Toda folha servida em /static: copiada para o lado e com o caminho reescrito,
-# senão a página abre no navegador SEM estilo — e o defeito parece ser do app.
-FOLHAS = ("style.css", "graficos.css", "impressao.css", "manual.css")
+# Tudo o que é servido em /static: copiado para o lado e com o caminho
+# reescrito, senão a página abre no navegador SEM estilo (ou sem a cortina de
+# escalas) — e o defeito parece ser do app. Ao criar uma folha ou um script,
+# acrescente aqui também.
+ESTATICOS = ("style.css", "graficos.css", "impressao.css", "manual.css", "menu.js")
 
 # Sobrenomes inventados, escolhidos para NÃO coincidir com o efetivo real.
 NOMES = [
@@ -198,8 +200,8 @@ def povoar(db: Session, hoje: date) -> int:
 def exportar(destino: Path) -> None:
     hoje = date.today()
     destino.mkdir(parents=True, exist_ok=True)
-    for css in FOLHAS:
-        shutil.copy(RAIZ / "app/web/static" / css, destino / css)
+    for arquivo in ESTATICOS:
+        shutil.copy(RAIZ / "app/web/static" / arquivo, destino / arquivo)
 
     tmp = Path(tempfile.mkdtemp()) / "demo.sqlite3"
     engine = create_engine(f"sqlite:///{tmp}")
@@ -219,8 +221,8 @@ def exportar(destino: Path) -> None:
                     c.cookies.clear()
                 r = c.get(url)
                 html = r.text
-                for css in FOLHAS:
-                    html = html.replace(f"/static/{css}", css)
+                for arquivo in ESTATICOS:
+                    html = html.replace(f"/static/{arquivo}", arquivo)
                 (destino / f"{nome}.html").write_text(html, encoding="utf-8")
                 print(f"  {nome:<34} {r.status_code}  {len(html):>7} bytes  {url}")
     finally:

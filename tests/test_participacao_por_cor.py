@@ -263,10 +263,45 @@ def test_csv_nao_avisa_quando_a_cor_confere(db):
 
 # --- consulta aberta: cortina de escalas (regra 13.1) -------------------------
 def test_consulta_traz_a_cortina_e_diz_qual_escala_esta_na_tela(db):
-    """Com a lista recolhida, o resumo é quem informa a escala exibida."""
+    """Cortina fechada: é o título que informa a escala exibida."""
     app.dependency_overrides[get_db] = lambda: db
     with TestClient(app) as c:
         html = c.get("/").text
     app.dependency_overrides.clear()
-    assert "<details class=\"menu-escalas\">" in html
-    assert "<summary>" in html and "Oficial de Dia" in html
+    assert 'id="menu-escalas"' in html and 'id="puxador-escalas"' in html
+    assert 'class="de-qual-escala">Oficial de Dia<' in html
+
+
+def test_sem_javascript_a_lista_de_escalas_continua_visivel(db):
+    """A consulta é ABERTA (13.1): não pode depender de script para navegar."""
+    app.dependency_overrides[get_db] = lambda: db
+    with TestClient(app) as c:
+        html = c.get("/").text
+    app.dependency_overrides.clear()
+    assert "<noscript>" in html and "position:static" in html
+
+
+def test_o_script_da_cortina_vai_no_head_e_sem_defer(db):
+    """A cortina lembra se estava aberta; marcar isso depois da página desenhada
+    a faria piscar fechada a cada troca de mês ou de escala."""
+    app.dependency_overrides[get_db] = lambda: db
+    with TestClient(app) as c:
+        html = c.get("/").text
+    app.dependency_overrides.clear()
+    cabeca = html.split("</head>")[0]
+    assert "/static/menu.js" in cabeca and "defer" not in cabeca
+
+
+def test_a_cortina_lembra_o_estado_entre_paginas(db):
+    """Escolher uma escala recarrega a página: sem memória, o menu se fecharia
+    sozinho a cada clique — o contrário do que se espera de um menu."""
+    from pathlib import Path
+    fonte = Path("app/web/static/menu.js").read_text(encoding="utf-8")
+    assert "localStorage" in fonte and "cortina-aberta" in fonte
+
+
+def test_o_script_da_cortina_nao_puxa_nada_de_fora(db):
+    """A rede da OM pode não ter internet — nem CDN, nem biblioteca."""
+    from pathlib import Path
+    fonte = Path("app/web/static/menu.js").read_text(encoding="utf-8")
+    assert "http" not in fonte and "import" not in fonte
