@@ -1,0 +1,33 @@
+{% extends "gestao/config/_base.html" %}
+{% block secao %}
+<form method="post" action="/gestao/configuracao/tipos" class="formulario busca">
+  <label class="cresce">Nome
+    <input name="nome" required maxlength="60" placeholder="Missão"></label>
+  <button type="submit">Acrescentar</button>
+</form>
+
+<table class="tabela">
+  <thead><tr><th>Tipo</th><th>Em uso</th><th></th></tr></thead>
+  <tbody>
+  {% for t in tipos %}
+    <tr class="{{ '' if t.ativo else 'inativa' }}">
+      <td>{{ t.nome }}
+        {% if not t.ativo %}<span class="tag">desativado</span>{% endif %}</td>
+      <td class="num-mono">{{ impedimentos_por_tipo.get(t.id, 0) }}</td>
+      <td class="acoes-linha">
+        <form method="post" action="/gestao/configuracao/tipos/{{ t.id }}/situacao">
+          <input type="hidden" name="ativo" value="{{ '0' if t.ativo else '1' }}">
+          <button class="mini secundario" type="submit">{{ 'desativar' if t.ativo else 'ativar' }}</button></form>
+        {% if not impedimentos_por_tipo.get(t.id, 0) %}
+          <form method="post" action="/gestao/configuracao/tipos/{{ t.id }}/excluir"
+                onsubmit="return confirm('Excluir o tipo {{ t.nome }}?')">
+            <button class="mini perigo" type="submit">excluir</button></form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="sub">Tipo já usado em algum impedimento não pode ser excluído — desative-o.
+Ele some do formulário de lançamento e os impedimentos antigos continuam válidos.</p>
+{% endblock %}

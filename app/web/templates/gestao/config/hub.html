@@ -1,0 +1,42 @@
+{% extends "gestao/base_gestao.html" %}
+{% block title %}Configurações — Gestão{% endblock %}
+{% block gestao %}
+{% include "gestao/config/_icones.html" %}
+
+<h2>Configurações</h2>
+<p class="sub">O sistema roda em <strong>qualquer OM</strong>, inclusive batalhão — uma
+instalação por OM (regra 13.2). O que identifica esta casa e as tabelas de referência
+que mudam com o tempo ficam aqui, não no código. Os cartões estão na
+<strong>ordem de instalação</strong>: cada passo depende do anterior.</p>
+
+{% set pendentes = cartoes|selectattr('pendencia')|list %}
+{% if pendentes %}
+<p class="alerta-caixa"><strong>{{ pendentes|length }}</strong>
+  {{ 'assunto pede' if pendentes|length == 1 else 'assuntos pedem' }} atenção —
+  marcados abaixo.</p>
+{% endif %}
+
+{# O cartão INTEIRO é um <a>: sem JS, funciona com teclado e leitor de tela, e
+   o clique pega a área toda em vez de só o título. #}
+<div class="cartoes">
+  {% for c in cartoes %}
+  <a class="cartao-config {{ 'com-pendencia' if c.pendencia }}" href="{{ c.caminho }}">
+    <span class="marca-icone" aria-hidden="true">
+      <svg class="icone" viewBox="0 0 24 24"><use href="#i-{{ c.icone }}"></use></svg>
+    </span>
+    <span class="corpo">
+      <span class="titulo">{{ c.titulo }}</span>
+      <span class="descricao">{{ c.descricao }}</span>
+      {% if c.estado %}<span class="estado">{{ c.estado }}</span>{% endif %}
+      {# A pendência vem com a palavra escrita, não só com a cor do cartão. #}
+      {% if c.pendencia %}<span class="pendencia">Atenção: {{ c.pendencia }}</span>{% endif %}
+    </span>
+    <span class="seta" aria-hidden="true">→</span>
+  </a>
+  {% endfor %}
+</div>
+
+<p class="sub">Todas as alterações feitas aqui ficam no
+  <a href="/gestao/auditoria">histórico</a>, com o nome de quem fez (regra 11).
+  Em dúvida sobre a ordem das coisas, veja <a href="/manual">o manual</a>.</p>
+{% endblock %}

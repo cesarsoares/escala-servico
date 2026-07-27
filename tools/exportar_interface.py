@@ -74,6 +74,8 @@ TELAS = {
     "16-permuta-registrar": "/gestao/permutas/servico/{servico_id}",
     "17-historico-auditoria": "/gestao/auditoria",
     "18-configuracoes": "/gestao/configuracao",
+    "18b-config-graduacoes": "/gestao/configuracao/graduacoes",
+    "18c-config-gestores": "/gestao/configuracao/gestores",
     "19-importar-historico": "/gestao/importar",
     "20-manual": "/manual",
 }

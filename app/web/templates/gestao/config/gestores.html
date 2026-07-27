@@ -1,0 +1,51 @@
+{% extends "gestao/config/_base.html" %}
+{% block secao %}
+<p class="sub">A consulta continua <strong>aberta a todos</strong>, sem login (regra 13.1).
+Toda alteração fica no <a href="/gestao/auditoria">histórico</a>, com o nome de quem fez.
+Senha de no mínimo {{ senha_minima }} caracteres.</p>
+
+<form method="post" action="/gestao/configuracao/gestores" class="formulario busca">
+  <label>Login
+    <input name="login" required maxlength="60" placeholder="sgt.silva" autocomplete="off"></label>
+  <label class="cresce">Nome
+    <input name="nome" required maxlength="120" placeholder="Sgt Silva"></label>
+  <label>Senha
+    <input type="password" name="senha" required minlength="{{ senha_minima }}"
+           autocomplete="new-password"></label>
+  <label>Repita
+    <input type="password" name="senha2" required minlength="{{ senha_minima }}"
+           autocomplete="new-password"></label>
+  <button type="submit">Cadastrar gestor</button>
+</form>
+
+<table class="tabela">
+  <thead><tr><th>Login</th><th>Nome</th><th>Situação</th><th>Trocar a senha</th><th></th></tr></thead>
+  <tbody>
+  {% for u in gestores %}
+    <tr class="{{ '' if u.ativo else 'inativa' }}">
+      <td>{{ u.login }}{% if u.id == gestor.id %} <span class="tag tag-escalar">você</span>{% endif %}</td>
+      <td>{{ u.nome }}</td>
+      <td>{{ 'ativo' if u.ativo else 'desativado' }}</td>
+      <td>
+        <form method="post" action="/gestao/configuracao/gestores/{{ u.id }}/senha" class="inline">
+          <input type="password" name="senha" required minlength="{{ senha_minima }}"
+                 placeholder="nova senha" autocomplete="new-password">
+          <input type="password" name="senha2" required minlength="{{ senha_minima }}"
+                 placeholder="repita" autocomplete="new-password">
+          <button class="mini secundario" type="submit">trocar</button>
+        </form>
+      </td>
+      <td class="acoes-linha">
+        <form method="post" action="/gestao/configuracao/gestores/{{ u.id }}/situacao">
+          <input type="hidden" name="ativo" value="{{ '0' if u.ativo else '1' }}">
+          <button class="mini {{ 'perigo' if u.ativo else 'secundario' }}" type="submit">
+            {{ 'desativar' if u.ativo else 'reativar' }}</button></form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="sub">Gestor <strong>não se exclui</strong>: o histórico aponta para ele e
+perderia o nome de quem fez cada alteração. Desativar tira o acesso e preserva o
+registro. Não é possível desativar o próprio acesso nem o último gestor ativo.</p>
+{% endblock %}

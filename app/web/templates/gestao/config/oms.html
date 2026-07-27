@@ -1,0 +1,41 @@
+{% extends "gestao/config/_base.html" %}
+{% block secao %}
+<form method="post" action="/gestao/configuracao/oms" class="formulario busca">
+  <label class="cresce">Nome
+    <input name="nome" required maxlength="120" placeholder="Comando Militar do Sul"></label>
+  <label>Sigla
+    <input name="sigla" required maxlength="30" placeholder="Cmdo CMS"></label>
+  <button type="submit">Cadastrar OM</button>
+</form>
+
+<table class="tabela">
+  <thead><tr><th>Sigla</th><th>Nome</th><th>Militares</th><th></th></tr></thead>
+  <tbody>
+  {% for o in oms %}
+    <tr>
+      <td>{{ o.sigla }}
+        {% if o.propria %}<span class="tag tag-escalar">esta instalação</span>{% endif %}</td>
+      <td>
+        <form method="post" action="/gestao/configuracao/oms/{{ o.id }}" class="inline">
+          <input name="nome" value="{{ o.nome }}" required maxlength="120">
+          <input name="sigla" value="{{ o.sigla }}" required maxlength="30" size="12">
+          <button class="mini secundario" type="submit">salvar</button>
+        </form>
+      </td>
+      <td class="num-mono">{{ militares_por_om.get(o.id, 0) }}</td>
+      <td class="acoes-linha">
+        {% if not o.propria and not militares_por_om.get(o.id, 0) %}
+          <form method="post" action="/gestao/configuracao/oms/{{ o.id }}/excluir"
+                onsubmit="return confirm('Excluir a OM {{ o.sigla }}?')">
+            <button class="mini perigo" type="submit">excluir</button></form>
+        {% else %}
+          <span class="fraco">—</span>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="sub">OM com militar não pode ser excluída (a FK do cadastro depende dela),
+nem a OM desta instalação — marque outra como a da casa antes.</p>
+{% endblock %}

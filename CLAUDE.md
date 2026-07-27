@@ -539,9 +539,28 @@ pegou.
 
 `/gestao/configuracao` (router `app/web/gestao_config.py`, lógica em
 `app/services/configuracao.py`). É o que faltava para o sistema ser **instalável
-por qualquer OM sem editar código, `.env` ou banco**. Cinco seções numa página
-só, com âncoras — são assuntos pequenos e correlatos, e um por aba obrigaria a
-ir e voltar.
+por qualquer OM sem editar código, `.env` ou banco**.
+
+**É um hub de cartões**, e cada assunto tem a sua página
+(`templates/gestao/config/`). A primeira versão era uma página só com âncoras e
+não se sustentou: a seção de graduações tem 17 linhas **com formulário embutido
+em cada uma** e enterrava as outras quatro.
+
+Três decisões do hub que não são estéticas:
+- **O cartão traz a contagem E a pendência** (`configuracao.panorama`, testado
+  sem HTTP). Hub que só repete títulos custa um clique e não devolve nada; com
+  a pendência, a página se paga: "OM não definida", "só um gestor ativo — se
+  perder a senha só a TI recria", "nenhum serviço registrado".
+- **Ícones em SVG embutido** (`config/_icones.html`): sem CDN e sem fonte de
+  ícones, porque a rede da OM pode não ter internet; e sem emoji, que sai
+  diferente em cada máquina. Herdam a cor por `currentColor`.
+- **O cartão inteiro é um `<a>`** — nada de `div` com `onclick`: funciona no
+  teclado e no leitor de tela, e o clique pega a área toda.
+- Gravar volta para a **própria seção**, não para o hub: quem cadastrou uma OM
+  normalmente vai cadastrar a próxima.
+
+Os cartões estão na **ordem de instalação** (a mesma do manual), porque cada
+passo depende do anterior.
 
 1. **OM da instalação** — `organizacao_militar.propria`. Antes vinha de
    `om_sigla`/`om_nome` no `.env`, que passou a ser só **reserva do primeiro

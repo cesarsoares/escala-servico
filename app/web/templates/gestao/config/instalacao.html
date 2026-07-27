@@ -1,0 +1,27 @@
+{% extends "gestao/config/_base.html" %}
+{% block secao %}
+<form method="post" action="/gestao/configuracao/instalacao" class="formulario col">
+  <div class="grade2">
+    <label>OM desta instalação
+      <select name="om_id">
+        <option value="">— não definida —</option>
+        {% for o in oms %}
+          <option value="{{ o.id }}" {{ 'selected' if o.propria }}>{{ o.sigla }} — {{ o.nome }}</option>
+        {% endfor %}
+      </select>
+      <span class="fraco">aparece no cabeçalho e no rodapé de todas as telas</span></label>
+    <label>Contato do suporte local
+      <input name="suporte_contato" value="{{ suporte }}" maxlength="200"
+             placeholder="ex.: Seção de TI — ramal 1234">
+      <span class="fraco">vai no rodapé; é o que falta quando algo dá errado</span></label>
+  </div>
+  <button type="submit">Salvar</button>
+</form>
+
+<p class="sub">A OM da casa precisa estar cadastrada em
+  <a href="/gestao/configuracao/oms">Organizações Militares</a>. Se ela ainda não
+  está, cadastre-a primeiro e volte aqui.</p>
+<p class="sub">Só <strong>uma</strong> OM pode ser a da instalação: marcar outra
+  desmarca a atual. O sistema é uma instalação por OM (regra 13.2) — não há
+  separação por OM dentro do banco.</p>
+{% endblock %}

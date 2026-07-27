@@ -65,6 +65,76 @@ def _sigla(db, nome):
     return db.scalar(select(PostoGraduacao).where(PostoGraduacao.sigla == nome))
 
 
+# --- 0. o hub de cartões ------------------------------------------------------
+def test_o_hub_lista_um_cartao_por_assunto(client):
+    texto = client.get("/gestao/configuracao").text
+    for caminho in ("/gestao/configuracao/instalacao", "/gestao/configuracao/oms",
+                    "/gestao/configuracao/graduacoes", "/gestao/configuracao/tipos",
+                    "/gestao/configuracao/gestores", "/gestao/importar"):
+        assert f'href="{caminho}"' in texto
+
+
+def test_cada_cartao_leva_a_uma_pagina_que_existe(client, db):
+    """Cartão que aponta para 404 é pior que não ter cartão."""
+    for c in cfg.panorama(db):
+        assert client.get(c.caminho).status_code == 200, c.caminho
+
+
+def test_o_cartao_avisa_que_a_om_nao_foi_escolhida(client, db):
+    """O hub tem de valer a visita: contagem E pendência, não só o título."""
+    cartao = next(c for c in cfg.panorama(db) if c.chave == "instalacao")
+    assert cartao.pendencia and "não definida" in cartao.pendencia
+    assert "Atenção" in client.get("/gestao/configuracao").text
+
+
+def test_a_pendencia_some_quando_resolvida(client, db):
+    cfg.definir_om_propria(db, 1)
+    db.commit()
+    cartao = next(c for c in cfg.panorama(db) if c.chave == "instalacao")
+    assert not cartao.pendencia and cartao.estado.startswith("QG")
+
+
+def test_um_gestor_so_e_apontado_como_ponto_unico_de_falha(client, db):
+    """Perdida a senha do único gestor, só a TI recria — pelo terminal."""
+    cartao = next(c for c in cfg.panorama(db) if c.chave == "gestores")
+    assert "só um gestor" in cartao.pendencia
+    cfg.criar_gestor(db, "outro", "Outro", "senha-boa-1", "senha-boa-1")
+    db.commit()
+    assert not next(c for c in cfg.panorama(db) if c.chave == "gestores").pendencia
+
+
+def test_sem_servico_gravado_o_hub_sugere_importar(client, db):
+    cartao = next(c for c in cfg.panorama(db) if c.chave == "importar")
+    assert "nunca serviu" in cartao.pendencia
+
+
+def test_a_pagina_da_secao_repete_o_texto_do_cartao(client, db):
+    """O gestor reencontra no cabeçalho a frase em que clicou — fonte única."""
+    cartao = next(c for c in cfg.panorama(db) if c.chave == "graduacoes")
+    texto = client.get("/gestao/configuracao/graduacoes").text
+    assert cartao.titulo in texto and cartao.descricao[:40] in texto
+
+
+def test_a_secao_tem_volta_para_o_hub(client):
+    assert 'href="/gestao/configuracao"' in client.get(
+        "/gestao/configuracao/oms").text
+
+
+def test_gravar_volta_para_a_propria_secao_e_nao_para_o_hub(client):
+    """Quem acabou de cadastrar uma OM normalmente vai cadastrar a próxima."""
+    r = client.post("/gestao/configuracao/oms", follow_redirects=False,
+                             data={"nome": "Nova OM", "sigla": "N OM"})
+    assert r.headers["location"] == "/gestao/configuracao/oms?ok=om-criada"
+
+
+def test_os_icones_nao_dependem_de_nada_externo(client):
+    """A rede da OM pode não ter internet: sem CDN, sem fonte de ícones."""
+    texto = client.get("/gestao/configuracao").text
+    assert "<symbol id=\"i-predio\"" in texto
+    assert "http://" not in texto.replace("http://www.w3.org", "")
+    assert "https://" not in texto
+
+
 # --- 1. OM da instalação ------------------------------------------------------
 def test_sem_om_marcada_o_cabecalho_cai_no_env(db):
     ident = cfg.identificacao(db)
@@ -357,5 +427,7 @@ def test_toda_confirmacao_da_tela_tem_traducao():
     from pathlib import Path
     fonte = (Path(__file__).resolve().parents[1] / "app" / "web"
              / "gestao_config.py").read_text(encoding="utf-8")
-    for chave in re.findall(r'_ok\("([a-z-]+)"', fonte):
+    chaves = re.findall(r'_ok\(\s*"[a-z]+",\s*\n?\s*"([a-z-]+)"', fonte)
+    assert chaves, "nenhuma chave encontrada — o teste perdeu o alvo"
+    for chave in chaves:
         assert chave in AVISOS, f"'{chave}' não está em AVISOS"

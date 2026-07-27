@@ -1,0 +1,28 @@
+{# Base das páginas de uma seção de Configurações.
+
+   O cabeçalho vem do MESMO `Cartao` que o hub mostra — o gestor reencontra
+   aqui a frase em que clicou, e não há dois textos para manter. #}
+{% extends "gestao/base_gestao.html" %}
+{% block title %}{{ cartao.titulo if cartao }} — Configurações{% endblock %}
+{% block gestao %}
+{% include "gestao/config/_icones.html" %}
+
+<p class="sub"><a href="/gestao/configuracao">← Configurações</a></p>
+
+<div class="topo-secao">
+  <span class="marca-icone" aria-hidden="true">
+    <svg class="icone" viewBox="0 0 24 24"><use href="#i-{{ cartao.icone }}"></use></svg>
+  </span>
+  <div>
+    <h2>{{ cartao.titulo }}</h2>
+    <p class="sub">{{ cartao.descricao }}</p>
+  </div>
+</div>
+
+{% if cartao.pendencia %}
+  <p class="alerta-caixa">Atenção: {{ cartao.pendencia }}.</p>
+{% endif %}
+{% if erro %}<p class="erro">{{ erro }}</p>{% endif %}
+
+{% block secao %}{% endblock %}
+{% endblock %}

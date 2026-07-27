@@ -1,0 +1,71 @@
+{% extends "gestao/config/_base.html" %}
+{% block secao %}
+<p class="sub">A tabela nasce com a escala hierárquica da <strong>Lei 6.880/80, art. 16</strong>.
+Do <strong>mais antigo</strong> (topo) ao mais moderno. Mexer na ordem vale da próxima
+escalação em diante — os serviços já gravados não mudam.</p>
+
+<form method="post" action="/gestao/configuracao/graduacoes" class="formulario busca">
+  <label>Sigla
+    <input name="sigla" required maxlength="12" placeholder="3º Sgt" size="10"></label>
+  <label class="cresce">Nome
+    <input name="nome" required maxlength="60" placeholder="Terceiro-Sargento"></label>
+  <label>Círculo
+    <select name="circulo_id" required>
+      {% for c in circulos %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
+    </select></label>
+  <label>Abaixo de
+    <select name="abaixo_de_id">
+      <option value="">— no topo —</option>
+      {% for g in graduacoes %}<option value="{{ g.id }}">{{ g.sigla }}</option>{% endfor %}
+    </select></label>
+  <button type="submit">Acrescentar</button>
+</form>
+
+<table class="tabela">
+  <thead><tr><th>Sigla</th><th>Nome</th><th>Círculo</th><th>Militares</th>
+             <th>Ordem</th><th></th></tr></thead>
+  <tbody>
+  {% for g in graduacoes %}
+    <tr class="{{ '' if g.ativo else 'inativa' }}">
+      <td>{{ g.sigla }}
+        {% if not g.ativo %}<span class="tag">desativado</span>{% endif %}
+        {% if g.circulo.eh_praca %}<span class="tag" title="desempate pelo número de antiguidade (regra 9.5)">praça</span>{% endif %}</td>
+      <td>
+        <form method="post" action="/gestao/configuracao/graduacoes/{{ g.id }}" class="inline">
+          <input name="sigla" value="{{ g.sigla }}" required maxlength="12" size="8">
+          <input name="nome" value="{{ g.nome }}" required maxlength="60">
+          <select name="circulo_id">
+            {% for c in circulos %}
+              <option value="{{ c.id }}" {{ 'selected' if c.id == g.circulo_id }}>{{ c.nome }}</option>
+            {% endfor %}
+          </select>
+          <button class="mini secundario" type="submit">salvar</button>
+        </form>
+      </td>
+      <td class="fraco">{{ g.circulo.nome }}</td>
+      <td class="num-mono">{{ militares_por_graduacao.get(g.id, 0) }}</td>
+      <td class="num-mono fraco">{{ g.ordem_hierarquica }}</td>
+      <td class="acoes-linha">
+        <form method="post" action="/gestao/configuracao/graduacoes/{{ g.id }}/mover">
+          <input type="hidden" name="direcao" value="subir">
+          <button class="mini secundario" type="submit" title="mais antigo">↑</button></form>
+        <form method="post" action="/gestao/configuracao/graduacoes/{{ g.id }}/mover">
+          <input type="hidden" name="direcao" value="descer">
+          <button class="mini secundario" type="submit" title="mais moderno">↓</button></form>
+        <form method="post" action="/gestao/configuracao/graduacoes/{{ g.id }}/situacao">
+          <input type="hidden" name="ativo" value="{{ '0' if g.ativo else '1' }}">
+          <button class="mini secundario" type="submit">{{ 'desativar' if g.ativo else 'ativar' }}</button></form>
+        {% if not militares_por_graduacao.get(g.id, 0) %}
+          <form method="post" action="/gestao/configuracao/graduacoes/{{ g.id }}/excluir"
+                onsubmit="return confirm('Excluir {{ g.sigla }}?')">
+            <button class="mini perigo" type="submit">excluir</button></form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="sub">Graduação que alguém já tem <strong>não pode ser excluída</strong> — apagá-la
+levaria junto o cadastro e o histórico dessas pessoas. O caminho é <em>desativar</em>:
+some dos formulários e quem já a tem continua como está.</p>
+{% endblock %}

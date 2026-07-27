@@ -16,7 +16,19 @@
       "Bash(python -m tools.exportar_interface \"C:/Users/cesar/AppData/Local/Temp/claude/c--Users-cesar-OneDrive-Documentos-projetos-escala/9fbfa581-3529-44c1-8afc-0ec33252d2e7/scratchpad/export2\")",
       "Bash(git --version)",
       "Bash(git init *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(grep -Ei \"\\\\.xlsx|\\\\.ods|sqlite3|fichas_exemplo|^\\\\.env$|^dados/|settings.local|export_interface\")",
+      "Bash(git commit *)",
+      "Bash(git count-objects *)",
+      "Bash(wsl -e bash /mnt/c/Users/cesar/AppData/Local/Temp/claude/c--Users-cesar-OneDrive-Documentos-projetos-escala/9fbfa581-3529-44c1-8afc-0ec33252d2e7/scratchpad/build.sh)",
+      "PowerShell(wsl -e bash $script 2>&1)",
+      "PowerShell($script = \"/mnt/c/Users/cesar/AppData/Local/Temp/claude/c--Users-cesar-OneDrive-Documentos-projetos-escala/9fbfa581-3529-44c1-8afc-0ec33252d2e7/scratchpad/build.sh\")",
+      "Bash(cat > *)",
+      "PowerShell($script = \"/mnt/c/Users/cesar/AppData/Local/Temp/claude/c--Users-cesar-OneDrive-Documentos-projetos-escala/9fbfa581-3529-44c1-8afc-0ec33252d2e7/scratchpad/subir.sh\")",
+      "Bash(python -m tools.exportar_interface \"C:/Users/cesar/AppData/Local/Temp/claude/c--Users-cesar-OneDrive-Documentos-projetos-escala/9fbfa581-3529-44c1-8afc-0ec33252d2e7/scratchpad/hub\")"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\cesar\\AppData\\Local\\Temp\\claude\\c--Users-cesar-OneDrive-Documentos-projetos-escala\\9fbfa581-3529-44c1-8afc-0ec33252d2e7\\scratchpad"
     ]
   }
 }

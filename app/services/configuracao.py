@@ -54,6 +54,99 @@ class ErroConfiguracao(Exception):
     """Recusa com motivo legível para o gestor (não é erro de sistema)."""
 
 
+# --- panorama (os cartões da página de Configurações) -------------------------
+@dataclass(frozen=True)
+class Cartao:
+    """Um assunto da configuração, do jeito que o hub o apresenta.
+
+    `estado` é a contagem; `pendencia` é o que falta fazer. Um hub que só
+    repete títulos custa um clique e não devolve nada — o que faz a página
+    valer a visita é dizer, de relance, onde ainda há trabalho.
+    """
+    chave: str
+    titulo: str
+    descricao: str
+    caminho: str
+    icone: str                      # nome do <symbol> no sprite do template
+    estado: str = ""
+    pendencia: str = ""
+
+
+def panorama(db: Session) -> list[Cartao]:
+    """Os cartões, na ORDEM DE INSTALAÇÃO — é a sequência do manual, e cada
+    passo depende do anterior (não dá para marcar a OM da casa antes de
+    cadastrá-la, nem importar histórico antes de ter escala e efetivo)."""
+    from app.models.servico import Servico          # local: evita ciclo de import
+
+    ident = identificacao(db)
+    n_oms = db.scalar(select(func.count()).select_from(OrganizacaoMilitar)) or 0
+    grads = graduacoes(db)
+    ativas = [g for g in grads if g.ativo]
+    tipos = tipos_impedimento(db)
+    tipos_ativos = [t for t in tipos if t.ativo]
+    us = gestores(db)
+    us_ativos = [u for u in us if u.ativo]
+    n_servicos = db.scalar(select(func.count()).select_from(Servico)) or 0
+
+    return [
+        Cartao(
+            "instalacao", "Esta instalação",
+            "Qual é a OM desta casa e o contato do suporte local. Aparecem no "
+            "cabeçalho e no rodapé de todas as telas.",
+            "/gestao/configuracao/instalacao", "predio",
+            estado=f"{ident.sigla} — {ident.nome}" if ident.configurada else "",
+            pendencia="" if ident.configurada else
+                      f"OM não definida (usando '{ident.sigla}', do arquivo de configuração)",
+        ),
+        Cartao(
+            "oms", "Organizações Militares",
+            "As OMs de origem de quem serve nesta escala. Num QG, o efetivo "
+            "vem de várias (regra 3.2).",
+            "/gestao/configuracao/oms", "predios",
+            estado=f"{n_oms} cadastrada(s)",
+        ),
+        Cartao(
+            "graduacoes", "Postos e graduações",
+            "A escala hierárquica da Lei 6.880/80. Mexer na ordem muda o "
+            "desempate da fila (regra 9.1).",
+            "/gestao/configuracao/graduacoes", "galoes",
+            estado=f"{len(ativas)} em uso"
+                   + (f", {len(grads) - len(ativas)} desativado(s)"
+                      if len(grads) > len(ativas) else ""),
+            pendencia="nenhum posto/graduação em uso" if not ativas else "",
+        ),
+        Cartao(
+            "tipos", "Tipos de impedimento",
+            "Dispensa, férias, curso, operação... o que tira o militar da "
+            "rotação sem tirar a vez dele (regra 7.5).",
+            "/gestao/configuracao/tipos", "calendario",
+            estado=f"{len(tipos_ativos)} em uso",
+            pendencia="nenhum tipo em uso — não há como lançar impedimento"
+                      if not tipos_ativos else "",
+        ),
+        Cartao(
+            "gestores", "Gestores",
+            "Quem entra na gestão com login e senha (regra 11). A consulta "
+            "continua aberta a todos.",
+            "/gestao/configuracao/gestores", "chave",
+            estado=f"{len(us_ativos)} ativo(s)",
+            # Um gestor só é um ponto único de falha: perdida a senha, só a TI
+            # recria, pelo terminal — e a tela impede desativar o último.
+            pendencia="só um gestor ativo; se ele perder a senha, apenas a TI "
+                      "recria pelo terminal" if len(us_ativos) == 1 else "",
+        ),
+        Cartao(
+            "importar", "Importar histórico",
+            "Carga dos serviços que já aconteceram, vindos de planilha. "
+            "Confere antes de gravar.",
+            "/gestao/importar", "seta-caixa",
+            estado=f"{n_servicos} serviço(s) registrado(s)",
+            pendencia="nenhum serviço registrado — sem histórico o motor começa "
+                      "com todos empatados em \"nunca serviu\"" if not n_servicos else "",
+        ),
+    ]
+
+
 # --- chave/valor --------------------------------------------------------------
 def valor(db: Session, chave: str) -> str:
     if chave not in CHAVES:

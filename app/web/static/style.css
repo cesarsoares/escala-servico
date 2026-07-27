@@ -419,6 +419,48 @@ button.perigo:hover { background:var(--vermelho-fundo); border-color:var(--verme
           background:var(--ambar-fundo); border:1px solid var(--ambar-borda);
           border-left:4px solid #d9a520; border-radius:var(--raio-p); color:var(--ambar); line-height:1.5; }
 .avisos li + li { margin-top:6px; }
+/* --- hub de Configurações: cartão por assunto ------------------------------- */
+/* Substituiu uma página única com âncoras: a seção de graduações tem 17 linhas
+   com formulário embutido em cada uma e enterrava as outras quatro. */
+.cartoes { display:grid; gap:12px; margin:20px 0 26px;
+           grid-template-columns:repeat(auto-fill, minmax(330px, 1fr)); }
+
+/* O cartão INTEIRO é o link — sem JS, acessível por teclado, e o clique pega
+   a área toda em vez de só o título. */
+.cartao-config { display:grid; grid-template-columns:auto 1fr auto; gap:14px;
+                 align-items:start; text-decoration:none; color:inherit;
+                 background:var(--papel); border:1px solid var(--borda);
+                 border-radius:var(--raio); padding:16px 18px; box-shadow:var(--sombra);
+                 transition:border-color .12s, box-shadow .12s, transform .12s; }
+.cartao-config:hover { border-color:var(--azul-claro); box-shadow:var(--sombra-2);
+                       transform:translateY(-1px); }
+.cartao-config .marca-icone { display:inline-flex; align-items:center; justify-content:center;
+                 width:40px; height:40px; flex:none; border-radius:11px;
+                 background:#e7eefb; color:var(--azul); }
+.cartao-config .icone, .topo-secao .icone { width:22px; height:22px; }
+.cartao-config .corpo { display:flex; flex-direction:column; gap:3px; min-width:0; }
+.cartao-config .titulo { font-weight:700; color:var(--azul); font-size:15.5px; }
+.cartao-config .descricao { color:var(--tinta-2); font-size:13.5px; line-height:1.5; }
+.cartao-config .estado { font-family:var(--mono); font-size:12px; color:var(--tinta-3);
+                         margin-top:3px; }
+.cartao-config .seta { color:var(--tinta-3); font-size:16px; align-self:center; }
+.cartao-config:hover .seta { color:var(--azul); }
+
+/* Pendência: âmbar na borda E a palavra "Atenção" escrita — cor nunca é a
+   única informação. */
+.cartao-config.com-pendencia { border-color:var(--ambar-borda); background:#fffdf6; }
+.cartao-config.com-pendencia .marca-icone { background:var(--ambar-fundo); color:var(--ambar); }
+.cartao-config .pendencia { color:var(--ambar); font-size:13px; font-weight:600;
+                            margin-top:4px; line-height:1.45; }
+
+/* Cabeçalho da página de uma seção: o mesmo ícone do cartão em que se clicou. */
+.topo-secao { display:flex; align-items:flex-start; gap:14px; margin-bottom:6px; }
+.topo-secao .marca-icone { display:inline-flex; align-items:center; justify-content:center;
+                 width:40px; height:40px; flex:none; border-radius:11px;
+                 background:#e7eefb; color:var(--azul); margin-top:2px; }
+.topo-secao h2 { margin-bottom:2px; }
+.topo-secao .sub { margin:0; }
+
 /* Pendência de configuração: mesma família do .avisos, mas parágrafo solto —
    "falta escolher a OM desta instalação" não é lista nem é erro. */
 .alerta-caixa { margin:0 0 18px; padding:12px 16px; font-size:14px; line-height:1.55;
