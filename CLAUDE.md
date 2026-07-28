@@ -935,6 +935,68 @@ A conferência virou o parcial `templates/gestao/_conferencia_backup.html`, usad
 pelas **duas portas**: mesmo ato, mesmo risco — duas cópias divergiriam
 justamente no aviso que importa.
 
+## Senha de primeiro acesso (feito — 2026-07-28, repositório aberto)
+
+O repositório deixou de ser privado (o usuário quis: outras OMs baixam e
+instalam). Isso não exigiu fechar nada — o código já assumia ser lido, e a
+`SECRET_KEY` sem default embutido existe por causa disso. **O que a abertura
+tornou urgente foi outra coisa:** entre `docker compose up` (ou o boot do
+Windows) e o gestor ser criado, `/gestao/primeiro-acesso` — e agora
+`/gestao/restaurar-instalacao` — ficam abertas a quem alcança a porta 8000.
+Numa rede de OM isso é o efetivo inteiro, e instalado na sexta para uso na
+segunda é um fim de semana de porta encostada.
+
+Conserto no padrão do Jenkins (`services/instalacao.senha_primeiro_acesso`):
+senha aleatória gerada no 1º boot, gravada em `dados/primeiro-acesso.txt` e
+**anunciada no log do arranque**. Quem instalou lê o arquivo; quem só alcança a
+rede, não. Obscuridade não conserta — a porta 8000 seria varrida de qualquer jeito.
+
+- **As DUAS portas exigem a senha**, e a restauração a confere **também na
+  etapa 2**: a etapa 1 não deixa credencial de pé, e chegar direto na 2 com um
+  token adivinhado passaria sem prova. Ela viaja em campo oculto entre as
+  etapas (`campos_extras` no parcial da conferência) — pedir para digitar duas
+  vezes seria atrito sem ganho.
+- **`secrets.compare_digest`**, não `==`: comparação ingênua vaza o tamanho do
+  prefixo acertado.
+- **`encerrar_primeiro_acesso()` apaga o arquivo** quando o gestor é criado e
+  quando um backup é restaurado (ele traz os gestores dentro). Credencial viva
+  não fica para trás — seria uma segunda porta pelo resto da vida da instalação.
+- **A senha nunca aparece na tela** (há teste): ela prova acesso ao SERVIDOR;
+  exibi-la anularia a trava.
+- **O anúncio mora no arranque** (`app/seeds/primeiro_acesso.py`, chamado por
+  `entrypoint.sh` e `windows/escala.cmd`), não num evento de startup do FastAPI:
+  é o único momento em que a TI está olhando a saída, e dentro do app custaria
+  uma consulta ao banco a cada boot no log de quem instalou há meses.
+- Recuperação documentada: apagar o arquivo gera outra senha.
+
+⚠️ **Listar não cria diretório** (`backup.pasta_automaticos(criar=False)` por
+padrão). A primeira versão fazia `mkdir` ao montar a tela, e bastou renderizar a
+página numa configuração de teste para nascer um `backups/` vazio na raiz do
+projeto. Mesma correção em `_pasta_envios`. Coberto por
+`test_listar_nao_cria_pasta_nenhuma`.
+
+## Subir com o Windows, sem Docker (feito — 2026-07-28)
+
+`windows/` — a máquina de teste é a do Brigada, Windows, e **Docker não fica de
+pé nela** (seção mais abaixo: `Exited (0)` quando a sessão do WSL encerra).
+
+- `instalar-servico.ps1` registra uma **tarefa agendada** disparada *Ao iniciar
+  o computador*, como **SYSTEM**. É de propósito, e não a pasta Inicializar nem
+  um atalho: assim sobe **antes de qualquer login** — a máquina reinicia por
+  queda de energia e por Windows Update, e a consulta é aberta ao efetivo
+  (13.1). `RestartCount`/`RestartInterval` são o equivalente ao
+  `restart: unless-stopped` do compose.
+- **Nada é baixado** (sem NSSM, sem serviço de terceiro): Agendador e Firewall
+  são nativos — a rede da OM pode não ter internet.
+- Firewall só nos perfis **Domínio e Particular**; o Público fica de fora.
+- ⚠️ **O script avisa se o projeto estiver sob OneDrive ou perfil de usuário**:
+  a tarefa roda como SYSTEM, que não enxerga essas pastas de forma confiável (e
+  o OneDrive só existe depois do login). O lugar é `C:\escala`.
+- `escala.cmd` faz o mesmo que o `entrypoint.sh`, na mesma ordem (migrar,
+  semear, anunciar o primeiro acesso, subir), com log em `dados\log\escala.log`
+  e rotação de uma geração aos 5 MB. **Sem acentos**: o console usa cp850 e o
+  log sairia ilegível.
+
 ## Próximos passos sugeridos
 
 1. **WeasyPrint gerando o PDF pelo servidor** — já está instalado na imagem

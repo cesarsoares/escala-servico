@@ -8,8 +8,19 @@
   {% if erro %}<p class="erro">{{ erro }}</p>{% endif %}
   {# Mesmo cuidado do login: celular e navegador capitalizam a primeira letra
      por conta própria e transformariam 'brigada' em 'Brigada'. #}
+  {# A senha de instalação vem PRIMEIRO no formulário: é a prova de que quem
+     está criando o administrador tem o servidor na mão. Sem ela, esta tela é
+     cadastro de administrador aberto a quem alcança a porta 8000 — e numa rede
+     de OM isso é o efetivo inteiro. #}
   <form method="post" action="/gestao/primeiro-acesso">
-    <label>Login<input name="login" value="{{ v.login or '' }}" autofocus required
+    <label>Senha de instalação
+      <input name="senha_instalacao" type="password" required autofocus
+             autocomplete="off" spellcheck="false"></label>
+    <p class="sub">Está no arquivo <code>{{ arquivo_senha }}</code>, no servidor,
+      e apareceu no log quando o sistema subiu. Perdeu? Apague o arquivo e
+      recarregue esta página — nasce outra.</p>
+
+    <label>Login<input name="login" value="{{ v.login or '' }}" required
                        autocapitalize="none" autocorrect="off" spellcheck="false"
                        autocomplete="username" placeholder="ex.: brigada"></label>
     <label>Nome<input name="nome" value="{{ v.nome or '' }}" required

@@ -15,10 +15,16 @@ está gravado e responde "isto já foi feito?".
 """
 from __future__ import annotations
 
+import logging
+import os
+import secrets
 from dataclasses import dataclass
+from pathlib import Path
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
+
+from app.config import settings
 
 from app.models.escala import Escala, Participacao, Posto
 from app.models.gestao import Usuario
@@ -169,3 +175,99 @@ def sem_gestor(db: Session) -> bool:
     assim que o primeiro gestor é criado.
     """
     return db.scalar(select(func.count()).select_from(Usuario)) == 0
+
+
+# --- senha de primeiro acesso -------------------------------------------------
+# Entre `docker compose up` e o gestor ser criado, as telas de primeiro acesso e
+# de restauração ficam abertas a QUALQUER pessoa que alcance a porta 8000. Numa
+# rede de OM isso é o efetivo inteiro, e a janela dura o que durar a demora do
+# sargenteante — instalado na sexta e usado na segunda, é um fim de semana.
+#
+# O conserto é o padrão que o Jenkins consagrou: uma senha aleatória gerada no
+# primeiro boot, gravada num arquivo AO LADO DO BANCO e anunciada no log. Quem
+# instalou tem o servidor na mão e a lê em dois segundos; quem só alcança a rede
+# não tem como adivinhá-la.
+#
+# Não é "mais uma senha para guardar": ela vale só até existir gestor, e some
+# sozinha nesse instante. Perdida antes disso, apague o arquivo e recarregue a
+# página — nasce outra.
+CAMINHO_SENHA = "primeiro-acesso.txt"
+
+_CABECALHO = """\
+# Senha de PRIMEIRO ACESSO do Sistema de Escala de Serviço.
+#
+# Ela é pedida uma única vez, para criar o primeiro gestor ou restaurar um
+# backup nesta máquina. Assim que existir um gestor, este arquivo é apagado
+# sozinho e a senha deixa de valer.
+#
+# Perdeu? Apague este arquivo e recarregue a página: nasce outra.
+"""
+
+
+def _arquivo_senha() -> Path:
+    return Path(settings.primeiro_acesso_file)
+
+
+def senha_primeiro_acesso() -> str:
+    """A senha desta instalação, criando-a se ainda não existir.
+
+    Mesma postura de `config.chave_persistente`: sem onde gravar (volume só de
+    leitura), a senha vale para o processo — o sistema sobe, mas nunca com valor
+    adivinhável. Só que aqui o efeito colateral é pior, porque ninguém consegue
+    LER a senha que ficou na memória; por isso ela também vai para o log.
+    """
+    arquivo = _arquivo_senha()
+    if arquivo.is_file():
+        for linha in arquivo.read_text(encoding="utf-8").splitlines():
+            limpa = linha.strip()
+            if limpa and not limpa.startswith("#"):
+                return limpa
+    nova = secrets.token_urlsafe(12)
+    try:
+        arquivo.parent.mkdir(parents=True, exist_ok=True)
+        arquivo.write_text(f"{_CABECALHO}\n{nova}\n", encoding="utf-8")
+        os.chmod(arquivo, 0o600)              # no Windows o efeito é parcial
+    except OSError:
+        logging.getLogger(__name__).warning(
+            "sem onde gravar a senha de primeiro acesso (%s); ela vale só para "
+            "este processo: %s", arquivo, nova)
+    return nova
+
+
+def conferir_senha(digitada: str) -> bool:
+    """Compara em tempo constante — `==` vaza o tamanho do prefixo acertado."""
+    return secrets.compare_digest((digitada or "").strip(), senha_primeiro_acesso())
+
+
+def encerrar_primeiro_acesso() -> None:
+    """Apaga a senha assim que existe gestor: ela é credencial viva.
+
+    Chamada depois de criar o primeiro gestor e depois de restaurar um backup
+    (que traz os gestores dele dentro). Deixar o arquivo para trás seria manter
+    uma segunda porta aberta pelo resto da vida da instalação.
+    """
+    try:
+        _arquivo_senha().unlink(missing_ok=True)
+    except OSError:
+        pass
+
+
+def anunciar_primeiro_acesso(db: Session) -> str | None:
+    """Escreve a senha no log, se ainda não houver gestor. Devolve-a, ou None.
+
+    Roda no ARRANQUE (entrypoint.sh no Docker, escala.cmd no Windows), e não
+    dentro da aplicação: é o único ponto em que a TI está olhando a saída. Pôr
+    isto num evento de startup do FastAPI custaria uma consulta ao banco a cada
+    boot e apareceria no log de quem já instalou há meses.
+    """
+    if not sem_gestor(db):
+        encerrar_primeiro_acesso()
+        return None
+    senha = senha_primeiro_acesso()
+    print("\n" + "=" * 68)
+    print("  PRIMEIRO ACESSO — esta instalação ainda não tem gestor.")
+    print(f"  Senha: {senha}")
+    print(f"  (também em {_arquivo_senha()})")
+    print("  Abra /gestao e crie o acesso ANTES de expor esta máquina à rede.")
+    print("=" * 68 + "\n", flush=True)
+    return senha

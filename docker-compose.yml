@@ -23,6 +23,11 @@ services:
       # continua valendo e tem precedência.
       SECRET_KEY: ${SECRET_KEY:-}
       SECRET_KEY_FILE: /dados/secret_key
+      # Senha de PRIMEIRO ACESSO: fecha a janela em que qualquer um na rede da
+      # OM podia criar o primeiro gestor. Gerada no 1º boot, impressa no log e
+      # guardada aqui; apagada sozinha assim que existe gestor. Fica no volume
+      # para a TI poder lê-la de fora (`docker compose exec app cat ...`).
+      PRIMEIRO_ACESSO_FILE: /dados/primeiro-acesso.txt
       # Fuso da OM. A auditoria é gravada em UTC e a tela converte para o fuso
       # do servidor (regra 11: "quem mexeu e quando" tem de bater com o relógio
       # da parede). Sem isto o container roda em UTC e mostra 3h adiantado.

@@ -46,7 +46,23 @@ def db():
 
 
 @pytest.fixture()
-def client(db):
+def senha_instalacao(tmp_path, monkeypatch) -> str:
+    """A senha de primeiro acesso, num arquivo temporário.
+
+    Ela fecha a janela em que qualquer um na rede vira gestor (ver
+    `test_primeiro_acesso_senha.py`); aqui só precisa existir e ser conhecida,
+    para que estes testes continuem exercitando o que sempre exercitaram.
+    """
+    from app.config import settings
+    from app.services.instalacao import senha_primeiro_acesso
+
+    monkeypatch.setattr(settings, "primeiro_acesso_file",
+                        str(tmp_path / "primeiro-acesso.txt"))
+    return senha_primeiro_acesso()
+
+
+@pytest.fixture()
+def client(db, senha_instalacao):
     app.dependency_overrides[get_db] = lambda: db
     with TestClient(app) as c:
         yield c
@@ -79,8 +95,9 @@ def test_gestao_sem_sessao_chega_ao_primeiro_acesso(client):
     assert r.status_code == 200 and "Primeiro acesso" in r.text
 
 
-def test_cria_o_primeiro_gestor_e_ja_entra_logado(client, db):
+def test_cria_o_primeiro_gestor_e_ja_entra_logado(client, db, senha_instalacao):
     r = client.post("/gestao/primeiro-acesso", follow_redirects=False, data={
+        "senha_instalacao": senha_instalacao,
         "login": " Brigada ", "nome": "Sgt Brigada",
         "senha": "senha-boa-123", "senha2": "senha-boa-123",
     })
@@ -93,8 +110,9 @@ def test_cria_o_primeiro_gestor_e_ja_entra_logado(client, db):
     assert client.get("/gestao/instalacao").status_code == 200
 
 
-def test_a_criacao_do_primeiro_gestor_fica_auditada(client, db):
+def test_a_criacao_do_primeiro_gestor_fica_auditada(client, db, senha_instalacao):
     client.post("/gestao/primeiro-acesso", data={
+        "senha_instalacao": senha_instalacao,
         "login": "brigada", "nome": "Sgt Brigada",
         "senha": "senha-boa-123", "senha2": "senha-boa-123"})
     registro = db.scalar(select(Auditoria).where(Auditoria.entidade == "usuario"))
@@ -102,18 +120,21 @@ def test_a_criacao_do_primeiro_gestor_fica_auditada(client, db):
     assert "senha_hash" not in (registro.dados_depois or {})   # senha não vaza (regra 11)
 
 
-def test_senha_curta_ou_diferente_e_recusada_sem_criar_ninguem(client, db):
+def test_senha_curta_ou_diferente_e_recusada_sem_criar_ninguem(client, db, senha_instalacao):
     curta = client.post("/gestao/primeiro-acesso", data={
+        "senha_instalacao": senha_instalacao,
         "login": "brigada", "nome": "Sgt", "senha": "123", "senha2": "123"})
     assert curta.status_code == 400
     diferentes = client.post("/gestao/primeiro-acesso", data={
+        "senha_instalacao": senha_instalacao,
         "login": "brigada", "nome": "Sgt", "senha": "senha-boa-123", "senha2": "outra-senha"})
     assert diferentes.status_code == 400 and "não conferem" in diferentes.text
     assert db.scalar(select(Usuario)) is None
 
 
-def test_o_que_foi_digitado_volta_no_erro(client):
+def test_o_que_foi_digitado_volta_no_erro(client, senha_instalacao):
     r = client.post("/gestao/primeiro-acesso", data={
+        "senha_instalacao": senha_instalacao,
         "login": "brigada", "nome": "Sgt Brigada", "senha": "123", "senha2": "123"})
     assert 'value="brigada"' in r.text and 'value="Sgt Brigada"' in r.text
 

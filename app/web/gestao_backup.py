@@ -212,10 +212,18 @@ router_instalacao = APIRouter(prefix="/gestao/restaurar-instalacao", tags=["web-
 
 
 def _tela_instalacao(request: Request, retrato=None, token: str = "",
-                     erro: str | None = None, status: int = 200):
+                     erro: str | None = None, status: int = 200,
+                     senha_instalacao: str = ""):
+    from app.config import settings
+
     return templates.TemplateResponse(request, "gestao/restaurar_instalacao.html", {
         "erro": erro, "retrato": retrato, "token": token,
         "em_arquivo": bkp.eh_arquivo(),
+        "arquivo_senha": settings.primeiro_acesso_file,
+        # Levada adiante na etapa 2: a senha é conferida NAS DUAS, e obrigar a
+        # digitá-la de novo depois da conferência seria atrito sem ganho — quem
+        # a acertou na primeira já provou ter acesso ao servidor.
+        "senha_instalacao": senha_instalacao,
     }, status_code=status)
 
 
@@ -226,31 +234,53 @@ def _so_sem_gestor(db: Session):
         "/gestao/login", status_code=303)
 
 
+_ERRO_SENHA = ("Senha de instalação incorreta. Ela está no arquivo indicado "
+               "abaixo, no servidor, e também aparece no log de quando o "
+               "sistema subiu.")
+
+
 @router_instalacao.get("", response_class=HTMLResponse)
 def restaurar_instalacao_form(request: Request, db: Session = Depends(get_db)):
-    return _so_sem_gestor(db) or _tela_instalacao(request)
+    from app.services import instalacao
+
+    fechada = _so_sem_gestor(db)
+    if fechada is not None:
+        return fechada
+    instalacao.senha_primeiro_acesso()        # garante o arquivo, como no /primeiro-acesso
+    return _tela_instalacao(request)
 
 
 @router_instalacao.post("", response_class=HTMLResponse)
 def restaurar_instalacao_conferir(request: Request,
                                   arquivo: UploadFile | None = File(None),
+                                  senha_instalacao: str = Form(""),
                                   db: Session = Depends(get_db)):
+    from app.services import instalacao
+
     fechada = _so_sem_gestor(db)
     if fechada is not None:
         return fechada
+    # Antes de gravar o arquivo enviado: sem a senha, esta rota seria um upload
+    # aberto de banco de dados para dentro do servidor.
+    if not instalacao.conferir_senha(senha_instalacao):
+        return _tela_instalacao(request, erro=_ERRO_SENHA, status=400)
     if arquivo is None or not arquivo.filename:
         return _tela_instalacao(
-            request, erro="Escolha o arquivo de backup (.sqlite3).", status=400)
+            request, erro="Escolha o arquivo de backup (.sqlite3).", status=400,
+            senha_instalacao=senha_instalacao)
     try:
         token = bkp.guardar_envio(arquivo.file.read())
         retrato = bkp.inspecionar(bkp.caminho_envio(token))
     except bkp.ErroBackup as e:
-        return _tela_instalacao(request, erro=str(e), status=400)
-    return _tela_instalacao(request, retrato=retrato, token=token)
+        return _tela_instalacao(request, erro=str(e), status=400,
+                                senha_instalacao=senha_instalacao)
+    return _tela_instalacao(request, retrato=retrato, token=token,
+                            senha_instalacao=senha_instalacao)
 
 
 @router_instalacao.post("/confirmar")
 def restaurar_instalacao_confirmar(request: Request, token: str = Form(""),
+                                   senha_instalacao: str = Form(""),
                                    db: Session = Depends(get_db)):
     """Põe o backup no lugar do banco vazio da máquina nova.
 
@@ -258,9 +288,15 @@ def restaurar_instalacao_confirmar(request: Request, token: str = Form(""),
     válido daqui em diante é o dos gestores que vieram dentro do arquivo, com as
     senhas de sempre.
     """
+    from app.services import instalacao
+
     fechada = _so_sem_gestor(db)
     if fechada is not None:
         return fechada
+    # Conferida DE NOVO: a etapa 1 não deixa credencial de pé para a etapa 2 —
+    # quem chegasse direto aqui com um token adivinhado passaria sem prova.
+    if not instalacao.conferir_senha(senha_instalacao):
+        return _tela_instalacao(request, erro=_ERRO_SENHA, status=400)
     try:
         bkp.caminho_envio(token)
     except bkp.ErroBackup as e:
@@ -273,6 +309,10 @@ def restaurar_instalacao_confirmar(request: Request, token: str = Form(""),
         return _tela_instalacao(request, erro=str(e), status=400)
 
     _registrar_restauracao(None, feito)
+    # O backup traz os gestores dele: a senha de instalação cumpriu o papel.
+    from app.services import instalacao as inst
+
+    inst.encerrar_primeiro_acesso()
     return RedirectResponse("/gestao/login?ok=instalacao-restaurada", status_code=303)
 
 

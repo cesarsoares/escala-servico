@@ -78,6 +78,37 @@ alembic upgrade head
 uvicorn app.main:app --reload      # http://localhost:8000
 ```
 
+## No Windows, subindo com a máquina
+
+Para a estação que fica ligada na seção (é onde o sistema será testado). Sem
+Docker — no Windows ele depende do WSL e o container cai quando a sessão do WSL
+encerra. PowerShell **como Administrador**, na pasta do projeto:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\pip install -r requirements.txt
+.\windows\instalar-servico.ps1
+```
+
+Registra uma tarefa agendada que dispara **ao iniciar o computador**, rodando
+como SYSTEM — antes de qualquer login, porque a consulta é aberta ao efetivo
+(regra 13.1) e não pode depender de alguém entrar na sessão. Reinicia sozinha
+se o processo cair, e libera a porta no firewall só nos perfis Domínio e
+Particular. Nada é baixado: Agendador e Firewall são nativos.
+
+Detalhe, atualização e remoção em [`windows/LEIA-ME.md`](windows/LEIA-ME.md).
+
+## ⚠️ Primeiro acesso: crie o gestor antes de divulgar o endereço
+
+Enquanto não existe gestor, `/gestao` leva à tela de **primeiro acesso**, que
+está aberta a quem alcança a porta. Ela exige uma **senha de instalação**
+gerada no primeiro boot, impressa no log e guardada em
+`dados/primeiro-acesso.txt` — quem instalou lê o arquivo; quem só alcança a
+rede, não. A senha some sozinha quando o gestor é criado.
+
+Ainda assim: **crie o gestor logo depois de instalar.** É o passo que fecha a
+porta de vez.
+
 ## Backup e troca de máquina
 
 O sistema guarda sozinho **uma cópia por dia** em `dados/backups/`, mantendo as

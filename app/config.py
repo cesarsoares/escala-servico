@@ -52,6 +52,10 @@ class Settings(BaseSettings):
     # SECRET_KEY no ambiente continua valendo e tem precedência.
     secret_key: str = ""
     secret_key_file: str = "dados/secret_key"
+    # Senha de PRIMEIRO ACESSO (ver services/instalacao). Fecha a janela em que
+    # qualquer um na rede da OM podia criar o primeiro gestor. Mora junto do
+    # banco: quem instalou lê o arquivo, quem só alcança a porta 8000 não.
+    primeiro_acesso_file: str = "dados/primeiro-acesso.txt"
     # Autenticação da gestão (regra 11). A consulta é aberta (regra 13.1); só
     # os endpoints de gestão exigem o token JWT assinado com secret_key.
     jwt_algoritmo: str = "HS256"

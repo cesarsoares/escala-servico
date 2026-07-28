@@ -591,7 +591,7 @@ def test_o_automatico_e_um_banco_com_os_dados(instalacao_em_arquivo):
 
 def test_a_poda_guarda_so_os_ultimos_sete(instalacao_em_arquivo):
     """Sete dias: cobre 'apaguei o mês errado' e a troca de máquina."""
-    pasta = bkp.pasta_automaticos()
+    pasta = bkp.pasta_automaticos(criar=True)     # aqui o TESTE é quem grava
     for dia in range(1, 13):
         (pasta / bkp.nome_automatico(date(2026, 7, dia))).write_bytes(b"x")
     assert bkp.podar_automaticos() == 12 - bkp.MANTER_AUTOMATICOS
@@ -600,13 +600,32 @@ def test_a_poda_guarda_so_os_ultimos_sete(instalacao_em_arquivo):
 
 
 def test_gerar_o_de_hoje_derruba_o_mais_antigo(instalacao_em_arquivo):
-    pasta = bkp.pasta_automaticos()
+    pasta = bkp.pasta_automaticos(criar=True)
     velhos = [date(2020, 1, d) for d in range(1, bkp.MANTER_AUTOMATICOS + 1)]
     for dia in velhos:
         (pasta / bkp.nome_automatico(dia)).write_bytes(b"x")
     bkp.gerar_automatico()
     assert len(bkp.automaticos()) == bkp.MANTER_AUTOMATICOS
     assert not (pasta / bkp.nome_automatico(velhos[0])).exists()
+
+
+def test_listar_nao_cria_pasta_nenhuma(instalacao_em_arquivo):
+    """Só quem GRAVA cria diretório.
+
+    A primeira versão criava a pasta ao montar a tela, e bastou renderizar a
+    página numa configuração de teste para aparecer um `backups/` vazio na raiz
+    do projeto de quem desenvolve.
+    """
+    pasta = bkp.pasta_automaticos()
+    assert pasta is not None and not pasta.exists()
+    assert bkp.automaticos() == []
+    assert not pasta.exists()
+    with pytest.raises(bkp.ErroBackup):
+        bkp.arquivo_automatico("escala-2026-07-28.sqlite3")
+    assert not pasta.exists()
+
+    bkp.gerar_automatico()
+    assert pasta.is_dir()
 
 
 def test_nome_de_automatico_fora_do_padrao_nao_alcanca_arquivo(instalacao_em_arquivo):
@@ -647,10 +666,17 @@ def test_baixar_carimba_a_versao_dentro_do_arquivo(logado, db, tmp_path):
 # --- 7. a máquina nova (restaurar antes de existir gestor) --------------------
 @pytest.fixture()
 def maquina_nova(tmp_path, monkeypatch):
-    """Instalação recém-subida: tabelas e referências, NENHUM gestor."""
+    """Instalação recém-subida: tabelas e referências, NENHUM gestor.
+
+    Devolve `(cliente, caminho_do_banco, senha_de_instalacao)` — a senha é
+    exigida pela porta de restauração, que é justamente o que impede qualquer
+    um na rede da OM de substituir a instalação (ver
+    `test_primeiro_acesso_senha.py`).
+    """
     from sqlalchemy.orm import sessionmaker
 
     from app import config, database
+    from app.services.instalacao import senha_primeiro_acesso
 
     caminho = tmp_path / "nova.sqlite3"
     url = f"sqlite+pysqlite:///{caminho.as_posix()}"
@@ -663,13 +689,15 @@ def maquina_nova(tmp_path, monkeypatch):
     _marcar_versao(caminho)
 
     monkeypatch.setattr(config.settings, "database_url", url)
+    monkeypatch.setattr(config.settings, "primeiro_acesso_file",
+                        str(tmp_path / "primeiro-acesso.txt"))
     monkeypatch.setattr(database, "engine", engine)
     monkeypatch.setattr(database, "SessionLocal",
                         sessionmaker(bind=engine, autoflush=False, expire_on_commit=False))
     sessao = Session(engine)
     app.dependency_overrides[get_db] = lambda: sessao
     with TestClient(app) as c:
-        yield c, caminho
+        yield c, caminho, senha_primeiro_acesso()
     app.dependency_overrides.clear()
     sessao.close()
     engine.dispose()
@@ -677,7 +705,7 @@ def maquina_nova(tmp_path, monkeypatch):
 
 def test_o_primeiro_acesso_oferece_restaurar(maquina_nova):
     """Metade dos primeiros acessos não é instalação nova: é máquina trocada."""
-    cliente, _ = maquina_nova
+    cliente, _, _ = maquina_nova
     corpo = cliente.get("/gestao/primeiro-acesso").text
     assert "/gestao/restaurar-instalacao" in corpo
     assert cliente.get("/gestao/restaurar-instalacao").status_code == 200
@@ -685,18 +713,22 @@ def test_o_primeiro_acesso_oferece_restaurar(maquina_nova):
 
 def test_restaurar_na_maquina_nova_traz_o_estado_de_outra(maquina_nova, tmp_path):
     """O cenário inteiro: máquina B sobe vazia e assume o estado da máquina A."""
-    cliente, caminho = maquina_nova
+    cliente, caminho, senha = maquina_nova
     conferencia = cliente.post(
         "/gestao/restaurar-instalacao",
+        data={"senha_instalacao": senha},
         files={"arquivo": ("bk.sqlite3", _outro_backup(tmp_path, "9BI", 4),
                            "application/octet-stream")})
     assert conferencia.status_code == 200
     assert "9BI" in conferencia.text
     # No banco vazio não há o que perder — a tela diz isso, e diz como entrar.
     assert "nada a perder" in conferencia.text
+    # A senha viaja para a etapa 2: quem a acertou aqui já provou ter o servidor.
+    assert f'name="senha_instalacao" value="{senha}"' in conferencia.text
 
     token = conferencia.text.split('name="token" value="')[1].split('"')[0]
-    r = cliente.post("/gestao/restaurar-instalacao/confirmar", data={"token": token},
+    r = cliente.post("/gestao/restaurar-instalacao/confirmar",
+                     data={"token": token, "senha_instalacao": senha},
                      follow_redirects=False)
     assert r.status_code == 303
     assert r.headers["location"] == "/gestao/login?ok=instalacao-restaurada"

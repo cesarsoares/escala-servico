@@ -318,12 +318,20 @@ def inspecionar(arquivo: Path) -> Retrato:
 
 
 # --- backups automáticos ------------------------------------------------------
-def pasta_automaticos() -> Path | None:
+def pasta_automaticos(criar: bool = False) -> Path | None:
+    """Onde ficam as cópias diárias.
+
+    `criar` é explícito de propósito: só quem VAI GRAVAR cria a pasta. Listar
+    não pode ter efeito colateral — a primeira versão criava o diretório ao
+    montar a tela, e bastou renderizar a página numa configuração de teste para
+    aparecer um `backups/` vazio na raiz do projeto.
+    """
     banco = caminho_do_banco()
     if banco is None:
         return None
     pasta = banco.parent / PASTA_AUTOMATICOS
-    pasta.mkdir(parents=True, exist_ok=True)
+    if criar:
+        pasta.mkdir(parents=True, exist_ok=True)
     return pasta
 
 
@@ -361,7 +369,7 @@ def _dia_do_nome(nome: str) -> date | None:
 def automaticos() -> list[ArquivoBackup]:
     """Os backups automáticos que existem, do mais recente para trás."""
     pasta = pasta_automaticos()
-    if pasta is None:
+    if pasta is None or not pasta.is_dir():
         return []
     achados = []
     for arq in pasta.glob("escala-*.sqlite3"):
@@ -415,7 +423,7 @@ def gerar_automatico(hoje: date | None = None, forcar: bool = False) -> Path | N
     para fora justamente os dias anteriores — que são o que se quer guardar.
     """
     banco = caminho_do_banco()
-    pasta = pasta_automaticos()
+    pasta = pasta_automaticos(criar=True)
     if banco is None or pasta is None or not banco.is_file():
         return None
     hoje = hoje or date.today()
@@ -442,14 +450,15 @@ def gerar_automatico(hoje: date | None = None, forcar: bool = False) -> Path | N
 
 
 # --- o arquivo enviado, entre conferir e confirmar ----------------------------
-def _pasta_envios() -> Path:
+def _pasta_envios(criar: bool = False) -> Path:
     banco = caminho_do_banco()
     if banco is None:
         raise ErroBackup(
             "Esta instalação não guarda o banco em arquivo — não há o que restaurar "
             "por aqui.")
     pasta = banco.parent / PASTA_ENVIOS
-    pasta.mkdir(parents=True, exist_ok=True)
+    if criar:
+        pasta.mkdir(parents=True, exist_ok=True)
     return pasta
 
 
@@ -497,6 +506,7 @@ def guardar_envio(conteudo: bytes) -> str:
             f"Arquivo grande demais (limite de {TAMANHO_MAXIMO // (1024 * 1024)} MB).")
     if not conteudo:
         raise ErroBackup("Arquivo vazio.")
+    _pasta_envios(criar=True)
     limpar_envios()
     token = secrets.token_urlsafe(16)
     destino = caminho_envio(token)

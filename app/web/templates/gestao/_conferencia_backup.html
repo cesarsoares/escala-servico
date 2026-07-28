@@ -64,6 +64,12 @@
   <form method="post" action="{{ acao_confirmar }}" class="formulario"
         onsubmit="return confirm('Restaurar o backup de {{ retrato.om }}? Esta ação não se desfaz sozinha.')">
     <input type="hidden" name="token" value="{{ token }}">
+    {# A porta do primeiro acesso leva a senha de instalação adiante: ela é
+       conferida também na etapa 2, e pedir que se digite duas vezes seria
+       atrito sem ganho — quem acertou na etapa 1 já provou ter o servidor. #}
+    {% for campo, valor in (campos_extras or []) %}
+    <input type="hidden" name="{{ campo }}" value="{{ valor }}">
+    {% endfor %}
     <button class="perigo" type="submit">Restaurar este backup</button>
     <a class="botao secundario" href="{{ acao_cancelar }}">Cancelar</a>
   </form>

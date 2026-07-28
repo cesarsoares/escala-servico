@@ -32,6 +32,9 @@ notas.txt
 
 # --- não servem em produção ---
 tests/
+# Instalação nativa no Windows: a imagem é Linux e o container tem o
+# entrypoint.sh para isso. Os scripts servem a quem NÃO usa Docker.
+windows/
 # As regras completas são material de desenvolvimento e ficam de fora, MAS o
 # manual é servido em /manual pela aplicação: sem ele a tela responde "manual
 # não encontrado nesta instalação". Excluir o conteúdo e reincluir a pasta é a

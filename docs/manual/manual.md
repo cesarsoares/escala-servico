@@ -30,6 +30,21 @@ gestores são cadastrados em **Configurações → Gestores**.
 > gestor, só a seção de TI recria o acesso, por linha de comando no servidor.
 > É por isso que cadastrar um **segundo gestor** é um dos passos da instalação.
 
+### 1.0.1 A senha de instalação
+
+Na primeira vez, a tela de primeiro acesso pede uma **senha de instalação**.
+Ela não é escolhida por ninguém: o sistema a gera sozinho no primeiro boot e a
+guarda em `dados/primeiro-acesso.txt`, no servidor. Também aparece no log de
+quando o sistema subiu.
+
+Ela existe porque, enquanto não há gestor, essa tela está aberta a **qualquer
+pessoa que alcance o endereço do sistema** — numa rede de OM, o efetivo inteiro.
+A senha prova que quem está criando o administrador tem acesso ao servidor.
+
+Peça-a a quem instalou. Ela **some sozinha** assim que o gestor é criado, e não
+serve para mais nada depois disso. Perdida antes? Apague o arquivo e recarregue
+a página: nasce outra.
+
 ### 1.1 Dizer qual é a sua OM
 
 Em **Configurações → Esta instalação**, escolha a OM desta instalação. Ela
@@ -273,8 +288,10 @@ sobe, ou só sobrou o `.sqlite3` que alguém baixou:
 1. instale o sistema na máquina nova (`docker compose up -d`);
 2. abra `/gestao`. Como não há gestor, ele leva ao **primeiro acesso** — ali,
    escolha **"restaure a partir dele"**, não crie acesso novo;
-3. envie o arquivo. O sistema mostra de que OM é, quantos militares e serviços
-   tem, **até quando vai** e qual versão o gerou;
+3. envie o arquivo, com a **senha de instalação** da máquina nova (item 1.0.1 —
+   ela está em `dados/primeiro-acesso.txt`, no servidor novo, não no antigo). O
+   sistema mostra de que OM é o backup, quantos militares e serviços tem, **até
+   quando vai** e qual versão o gerou;
 4. confirme e entre com **o login e a senha de sempre** — as senhas vêm dentro
    do backup.
 

@@ -75,8 +75,13 @@ def primeiro_acesso_form(request: Request, db: Session = Depends(get_db),
                          erro: str | None = None, v: dict | None = None):
     if not instalacao.sem_gestor(db):
         return RedirectResponse("/gestao/login", status_code=303)
+    # Cria o arquivo da senha se ainda não existir: o anúncio do arranque cobre
+    # quem leu o log, mas o sistema pode ter subido à mão. Quem GERA a senha não
+    # precisa vê-la — ela vai para um arquivo que só quem tem o servidor lê.
+    instalacao.senha_primeiro_acesso()
     return templates.TemplateResponse(request, "gestao/primeiro_acesso.html", {
         "erro": erro, "v": v or {}, "senha_minima": cfg.SENHA_MINIMA,
+        "arquivo_senha": settings.primeiro_acesso_file,
     })
 
 
@@ -84,6 +89,7 @@ def primeiro_acesso_form(request: Request, db: Session = Depends(get_db),
 def primeiro_acesso(
     request: Request, login: str = Form(""), nome: str = Form(""),
     senha: str = Form(""), senha2: str = Form(""),
+    senha_instalacao: str = Form(""),
     db: Session = Depends(get_db),
 ):
     """Cria o PRIMEIRO gestor e já o deixa logado.
@@ -91,15 +97,27 @@ def primeiro_acesso(
     A checagem de "não existe gestor" é refeita aqui, e não só no GET: entre
     abrir a tela e enviá-la, alguém pode ter criado o gestor pelo CLI — e esta
     rota não pode virar um cadastro aberto de gestores.
+
+    A senha de instalação é conferida ANTES de qualquer outra validação: sem
+    ela, esta tela é um cadastro de administrador aberto a quem alcança a porta.
     """
     if not instalacao.sem_gestor(db):
         return RedirectResponse("/gestao/login", status_code=303)
     digitado = {"login": login, "nome": nome}
+    if not instalacao.conferir_senha(senha_instalacao):
+        return templates.TemplateResponse(request, "gestao/primeiro_acesso.html", {
+            "erro": ("Senha de instalação incorreta. Ela está no arquivo "
+                     f"{settings.primeiro_acesso_file}, no servidor, e também "
+                     "aparece no log de quando o sistema subiu."),
+            "v": digitado, "senha_minima": cfg.SENHA_MINIMA,
+            "arquivo_senha": settings.primeiro_acesso_file,
+        }, status_code=400)
     try:
         usuario = cfg.criar_gestor(db, login, nome, senha, senha2)
     except cfg.ErroConfiguracao as e:
         return templates.TemplateResponse(request, "gestao/primeiro_acesso.html", {
             "erro": str(e), "v": digitado, "senha_minima": cfg.SENHA_MINIMA,
+            "arquivo_senha": settings.primeiro_acesso_file,
         }, status_code=400)
     # Auditoria (regra 11): o próprio gestor recém-criado responde pelo ato —
     # não há outro a quem atribuir, e a criação não pode ficar sem registro.
@@ -107,6 +125,9 @@ def primeiro_acesso(
                         entidade_id=usuario.id, acao="criar",
                         depois=auditoria.snapshot(usuario))
     db.commit()
+    # A senha de instalação é credencial viva: some no instante em que deixa de
+    # ser necessária. Mantê-la seria uma segunda porta pelo resto da vida da OM.
+    instalacao.encerrar_primeiro_acesso()
     # Entra direto no assistente: acabou de criar o acesso, o passo seguinte é
     # dizer qual é a OM — não faz sentido devolver a pessoa para o login.
     resp = RedirectResponse("/gestao/instalacao?ok=primeiro-gestor", status_code=303)

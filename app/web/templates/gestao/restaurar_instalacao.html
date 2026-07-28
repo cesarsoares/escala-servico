@@ -3,7 +3,8 @@
 {% block content %}
 {% if retrato %}
 {% with acao_confirmar = "/gestao/restaurar-instalacao/confirmar",
-        acao_cancelar = "/gestao/restaurar-instalacao", eu = "" %}
+        acao_cancelar = "/gestao/restaurar-instalacao", eu = "",
+        campos_extras = [("senha_instalacao", senha_instalacao)] %}
   {% include "gestao/_conferencia_backup.html" %}
 {% endwith %}
 {% else %}
@@ -16,6 +17,13 @@
 
   {% if em_arquivo %}
   <form method="post" action="/gestao/restaurar-instalacao" enctype="multipart/form-data">
+    <label>Senha de instalação
+      <input name="senha_instalacao" type="password" required autofocus
+             autocomplete="off" spellcheck="false"></label>
+    <p class="sub">No arquivo <code>{{ arquivo_senha }}</code> do servidor, e no
+      log de quando o sistema subiu. Restaurar substitui a instalação inteira —
+      não pode depender só de alcançar esta página.</p>
+
     <label>Arquivo de backup
       <input type="file" name="arquivo" accept=".sqlite3,.db,application/octet-stream"></label>
     <p class="sub">Nada é gravado agora: a próxima tela mostra de que OM é o
