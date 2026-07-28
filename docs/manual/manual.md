@@ -102,7 +102,7 @@ avisa dizendo **qual** cor está descoberta.
 ### 1.6 Carregar o histórico
 
 Se a OM já vinha fazendo escala em planilha, **importe o histórico** em
-**Configurações → importar o histórico de serviços**. Sem isso, o motor começa
+**Configurações → Importar histórico**. Sem isso, o motor começa
 com todo mundo empatado em "nunca serviu", e a primeira escalação sai só pela
 antiguidade — ignorando quem acabou de deixar o serviço.
 
@@ -135,11 +135,12 @@ responsável por cada mudança. Desativar tira o acesso e preserva o registro.
 
 ### 2.1 Fechar o mês
 
-**Escalar período**: escolha a escala, o início e o fim, e mande escalar. O
+Na aba **Escalar**: escolha a escala, o início e o fim, e mande escalar. O
 motor percorre dia a dia e, em cada um:
 
 1. classifica o dia em **preta** ou **vermelha** (regra 5);
-2. monta a fila da cor, **do mais folgado para o menos** (regra 6.2);
+2. monta a fila **daquela cor**, do mais folgado para o menos (regra 6.2) —
+   quem não concorre nessa cor nem entra na fila (regra 3.3.1);
 3. **pula** quem está impedido, mas ele **mantém a vez** na fila (regra 7.5);
 4. **pula** quem ainda não completou a folga mínima, contada do término do
    último serviço em **qualquer cor e qualquer escala concorrente** (regra 7.4);
@@ -157,9 +158,13 @@ geral obrigaria a procurar de novo).
 Informe o tipo e o período. O militar passa a ser **pulado** no período, mas
 **mantém a vez**: a fila não muda de ordem por causa disso (regra 7.5).
 
+Os **tipos** (dispensa, férias, curso, operação…) variam de OM para OM e são
+editáveis em **Configurações → Tipos de impedimento**. Tipo que a OM deixou de
+usar se **desativa**, não se apaga — os impedimentos antigos apontam para ele.
+
 > **Se o mês já estava fechado**, lançar o impedimento **não** refaz a escala. O
-> painel avisa quem está *escalado E impedido no mesmo dia*; a saída é voltar em
-> **Escalar período** e re-escalar com a opção **regravar**.
+> painel avisa quem está *escalado E impedido no mesmo dia*; a saída é voltar na
+> aba **Escalar** e re-escalar com a opção **regravar**.
 >
 > Atenção: *regravar* apaga o período e refaz — **as permutas do período são
 > perdidas** e precisam ser refeitas. A tela lista o que foi perdido, e fica
@@ -167,7 +172,9 @@ Informe o tipo e o período. O militar passa a ser **pulado** no período, mas
 
 ### 2.3 Registrar uma permuta
 
-Em **Permutas**, escolha a escala e o mês, clique no dia e informe quem cobre.
+Em **Permutas**, escolha a escala e o mês. A tela lista os dias com serviço;
+clique em **permutar** na linha do dia e escolha quem cobre. O substituto sai
+dos participantes ativos daquela escala.
 
 Permuta é **registro puro** (regra 9): anota quem cobriu o serviço. **A folga
 continua sendo de quem estava escalado** — não há retribuição automática nem
@@ -222,7 +229,9 @@ própria.
 
 ### 3.2 O documento impresso
 
-No calendário, **Imprimir**. O navegador imprime ou salva em PDF.
+No calendário, **Versão para impressão** (ao lado do mês). O navegador imprime
+ou salva em PDF. O endereço é aberto como o resto da consulta — dá para mandar
+o link a quem precise do documento.
 
 A folha de impressão é preparada para **impressora monocromática**: o dia
 vermelho é marcado pela letra **V** (e `*` para feriado), não apenas por cor.
@@ -230,21 +239,27 @@ Havendo permuta, o documento mostra o escalado **e** quem cobre.
 
 ### 3.3 O painel
 
-A tela inicial da gestão responde, nesta ordem:
+A tela inicial da gestão responde, **nesta ordem** — o que faz alguém deixar de
+entrar de serviço vem antes de qualquer estatística:
 
-1. **Cobertura** — até quando cada escala está fechada e quantos dias dos
-   próximos 30 estão descobertos. Só conta o dia em que a escala realmente
+1. **Precisa de você agora** — o resumo do que está pendente, com link para cada
+   assunto. (Enquanto a instalação não estiver completa, acima dele aparece a
+   faixa **Instalação em andamento**, com o próximo passo.)
+2. **Cobertura das escalas** — até quando cada escala está fechada e quantos dias
+   dos próximos 30 estão descobertos. Só conta o dia em que a escala realmente
    roda: uma escala só-vermelha não acusa buraco em dia útil.
-2. **Precisa de você agora** — militar escalado E impedido no mesmo dia, dia
-   gravado com menos militares que postos (regra 7.8), escala com menos
-   participantes que vagas.
-3. **Hoje e amanhã** — quem serve, com a permuta ao lado. Se amanhã não está
-   fechado, mostra quem o motor escalaria.
-4. **Cadastro do efetivo** — quantos ainda estão sem data de promoção, sem data
-   de nascimento e quantas praças estão sem número de antiguidade. Sem esses
-   campos o desempate roda sem os critérios que a regra manda.
-5. **Distribuição no ano** — mínimo, máximo e quantos nunca serviram, por
-   escala.
+3. **Exige atenção** — militar escalado E impedido no mesmo dia, dia gravado com
+   menos militares que postos (regra 7.8) e escala com menos participantes que
+   vagas — esta última **por cor**, quando alguém concorre só numa (regra 3.3.1).
+4. **Serviço de hoje** e **Amanhã** — quem serve, com a permuta ao lado. Se
+   amanhã ainda não está fechado, mostra quem o motor escalaria.
+5. **Completude do cadastro** — quantos ainda estão sem data de promoção, sem
+   data de nascimento e quantas praças estão sem número de antiguidade. Sem
+   esses campos o desempate roda sem os critérios que a regra manda.
+6. **Distribuição no ano** — mínimo, máximo e quantos nunca serviram, por escala.
+7. **Dias vermelhos à frente** — os fins de semana e feriados da janela, que são
+   onde a escala costuma apertar.
+8. **Últimas alterações** — as oito mais recentes; o resto fica no Histórico.
 
 ### 3.4 O histórico
 
@@ -276,9 +291,15 @@ Quem serviu há mais tempo *naquela cor*. É o topo da fila. O motor pega os N
 mais folgados disponíveis, sendo N o número de postos do dia.
 
 **Por que fulano foi pulado?**
-Três motivos possíveis: está **impedido** no dia; ainda **não completou a folga
-mínima** (contada de qualquer escala concorrente, não só desta); ou **não é
-participante ativo** da escala.
+Quatro motivos possíveis: está **impedido** no dia; ainda **não completou a
+folga mínima** (contada de qualquer escala concorrente, não só desta); **não
+concorre naquela cor** (regra 3.3.1 — confira a coluna *Concorre em* na escala);
+ou **não é participante ativo** da escala.
+
+**Como acho alguém no efetivo?**
+Pela busca no alto da tela **Efetivo**: ela casa o nome de guerra **ou** o nome
+completo, sem diferenciar maiúsculas, e dá para filtrar por posto/graduação e
+por OM. O total à direita ("2 de 285") nunca mente sobre o tamanho do efetivo.
 
 **Não tem gente suficiente para respeitar a folga. E agora?**
 O sistema **avisa**; a decisão é do gestor (regra 8) e tipicamente é extinguir a
@@ -292,9 +313,16 @@ Não; **extinga**. Apagar levaria junto os serviços gravados nela e a folga que
 deles decorre. O mesmo vale para um posto que já tenha serviço gravado.
 
 **Perdi a senha do único gestor.**
-A TI local recria pelo terminal, com
-`python -m app.seeds.usuario <login> "<nome>"`. Por isso o sistema não deixa
-desativar o último gestor ativo pela tela.
+A TI local recria pelo terminal do servidor, com
+
+```
+docker compose exec app python -m app.seeds.usuario <login> "<nome>"
+```
+
+O comando **cria ou troca a senha** do login informado. A tela de primeiro
+acesso não serve para isso: ela se fecha assim que existe um gestor, justamente
+para não virar um cadastro aberto. Por isso o sistema também não deixa desativar
+o último gestor ativo — e por isso o segundo gestor é um passo da instalação.
 
 ---
 

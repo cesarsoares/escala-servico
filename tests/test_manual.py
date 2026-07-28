@@ -115,3 +115,35 @@ def test_o_texto_editado_vale_sem_reiniciar(tmp_path, client, monkeypatch):
     os.utime(arquivo, (0, 0))            # mtime diferente, garantido
     assert "segunda versão" in client.get("/manual").text
     manual_web._cache = None
+
+
+# --- o manual não pode envelhecer em silêncio --------------------------------
+def _abas_da_gestao() -> list[str]:
+    """Rótulos das abas, lidos do TEMPLATE — não copiados para cá.
+
+    É o que faz o teste valer: renomear uma aba (já aconteceu duas vezes, por
+    falta de espaço na barra) quebra este teste até que o manual acompanhe.
+    """
+    import re
+    html = (RAIZ / "app/web/templates/gestao/base_gestao.html").read_text(encoding="utf-8")
+    barra = html.split("</nav>")[0]
+    fora = {"Ver consulta", "Sair"}          # ações, não telas documentáveis
+    return [r for r in re.findall(r">([A-ZÀ-Ú][^<>{}]*?)</a>", barra) if r.strip() not in fora]
+
+
+def test_o_manual_cita_todas_as_telas_da_gestao():
+    """Tela que existe e o manual não cita é tela que o gestor descobre sozinho."""
+    texto = (RAIZ / "docs" / "manual" / "manual.md").read_text(encoding="utf-8").lower()
+    faltando = [aba for aba in _abas_da_gestao() if aba.strip().lower() not in texto]
+    assert not faltando, f"telas ausentes do manual: {faltando}"
+
+
+def test_o_manual_nao_manda_o_gestor_a_rota_inexistente():
+    """Caminho citado no manual tem de existir de verdade na aplicação."""
+    import re
+    from app.main import app
+    texto = (RAIZ / "docs" / "manual" / "manual.md").read_text(encoding="utf-8")
+    rotas = {r.path for r in app.routes if hasattr(r, "path")}
+    citados = set(re.findall(r"`(/[a-z0-9/_-]*)`", texto))
+    assert citados, "o manual deixou de citar qualquer caminho — teste sem valor"
+    assert citados <= rotas, f"caminhos que não existem: {sorted(citados - rotas)}"
