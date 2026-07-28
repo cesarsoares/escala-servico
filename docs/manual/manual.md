@@ -282,6 +282,11 @@ A pasta leva o banco, a **chave de sessão** e as cópias automáticas de uma ve
 Ninguém é deslogado e não há o que conferir: é a mesma instalação, noutro
 hardware.
 
+> No Linux com Docker, os arquivos dentro de `dados/` pertencem ao **root** (é
+> o usuário do container). Copiar exige `sudo cp -a dados/ /destino/` — e o
+> `-a` preserva dono e permissões, que importam: a chave de sessão e a senha de
+> primeiro acesso são gravadas como legíveis só pelo dono.
+
 **Caminho longo — só o arquivo de backup.** Quando o servidor antigo já não
 sobe, ou só sobrou o `.sqlite3` que alguém baixou:
 

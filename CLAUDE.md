@@ -997,6 +997,39 @@ pé nela** (seção mais abaixo: `Exited (0)` quando a sessão do WSL encerra).
   e rotação de uma geração aos 5 MB. **Sem acentos**: o console usa cp850 e o
   log sairia ilegível.
 
+## Multi-SO: conferido no Linux, não só deduzido (2026-07-28)
+
+O sistema roda em **Linux (Docker, o deploy recomendado)** e em **Windows
+(nativo, `windows/`)**. Os scripts do Windows são aditivos: pasta separada,
+`windows/` no `.dockerignore`, e **nenhum código de `app/` importa `winreg`,
+`msvcrt`, `fcntl` ou consulta `sys.platform`** — só comentários citam Windows.
+
+Provado com a imagem real, banco vazio, tudo numa invocação do WSL
+(`wsl -e bash <script>` com `MSYS_NO_PATHCONV=1`, senão o Git Bash traduz o
+caminho e o script "não existe"):
+
+- `entrypoint.sh` → alembic → seeds → `app.seeds.primeiro_acesso` → uvicorn;
+- o volume nasce com `escala.sqlite3`, `secret_key`, `primeiro-acesso.txt`
+  (modo **600**, o `chmod` vale no Linux) e `backups/`;
+- `/health`, `/gestao/login`, `/gestao/primeiro-acesso`,
+  `/gestao/restaurar-instalacao` e `/manual` → 200;
+- a trava do primeiro acesso: senha errada **400**, certa **303**, arquivo
+  **apagado** depois;
+- o **backup automático do dia foi gerado** (o laço do lifespan roda);
+- fuso `-03`.
+
+⚠️ **Os arquivos de `dados/` pertencem ao root** no Docker (é o usuário do
+container). Isso é anterior a esta rodada, mas passou a importar porque o
+manual manda "copiar a pasta `dados/`" para trocar de máquina: lá está escrito
+`sudo cp -a` — o `-a` preserva dono e permissões, e a chave de sessão e a senha
+de primeiro acesso são 600.
+
+**`.gitattributes` entrou** (não existia): `*.sh`/`entrypoint.sh` em `eol=lf`,
+`*.cmd`/`*.bat`/`*.ps1` em `eol=crlf`, binários marcados. Sem ele o fim de linha
+dependia do `core.autocrlf` de quem clona — e agora quem clona é uma OM
+qualquer. `#!/bin/sh\r` vira "bad interpreter", que é a falha mais confusa que
+existe; o `sed -i 's/\r$//'` do Dockerfile era o curativo, isto ataca a causa.
+
 ## Próximos passos sugeridos
 
 1. **WeasyPrint gerando o PDF pelo servidor** — já está instalado na imagem

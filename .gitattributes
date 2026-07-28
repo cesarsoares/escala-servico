@@ -1,0 +1,32 @@
+# Fim de linha por tipo de arquivo, para o mesmo repositório servir Linux e
+# Windows sem depender do `core.autocrlf` de quem clona.
+#
+# Sem isto, o resultado varia por máquina: uma OM com `autocrlf=false` no
+# Windows recebe os `.cmd` com LF; um clone no Linux com `autocrlf=true` mal
+# configurado recebe o `entrypoint.sh` com CRLF — e `#!/bin/sh\r` vira
+# "bad interpreter", que é a falha mais confusa que existe. O Dockerfile hoje
+# tem um `sed -i 's/\r$//'` justamente para se defender disso; a declaração
+# abaixo ataca a causa.
+
+# Normalização padrão: LF no repositório, o que o SO preferir na cópia local.
+* text=auto
+
+# Scripts de shell SEMPRE em LF, inclusive quando checados no Windows: são
+# lidos por /bin/sh dentro do container Linux.
+*.sh text eol=lf
+entrypoint.sh text eol=lf
+
+# Scripts do Windows SEMPRE em CRLF: o cmd.exe tropeça em arquivo só com LF
+# (rótulos e `goto` em especial), e o Bloco de Notas antigo mostra tudo numa
+# linha só — quem for editar na OM provavelmente usará ele.
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Binários: nunca converter. O banco é o caso que dói — uma conversão de fim de
+# linha num .sqlite3 o corrompe silenciosamente.
+*.sqlite3 binary
+*.pdf binary
+*.png binary
+*.xlsx binary
+*.ods binary

@@ -85,7 +85,15 @@
       "Bash(python -m app.seeds.primeiro_acesso)",
       "Bash(rmdir backups *)",
       "Bash(python -m pytest tests/test_backup.py tests/test_primeiro_acesso_senha.py tests/test_instalacao.py -q -p no:cacheprovider)",
-      "Bash(python -m pytest tests/test_manual.py tests/test_gestao_web.py -q -p no:cacheprovider)"
+      "Bash(python -m pytest tests/test_manual.py tests/test_gestao_web.py -q -p no:cacheprovider)",
+      "Bash(grep -rnE \"import \\(winreg|msvcrt|fcntl|pwd|grp\\)|sys\\\\.platform|os\\\\.name|platform\\\\.system|subprocess|\\\\.cmd|\\\\.ps1|\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\" app/ --include=*.py)",
+      "Bash(wsl -e bash -c \"python3 --version; echo '---'; ls /mnt/c/Users/cesar/OneDrive/Documentos/projetos/escala/app/main.py\")",
+      "Bash(wsl -e bash \"/mnt/c/Users/cesar/AppData/Local/Temp/claude/c--Users-cesar-OneDrive-Documentos-projetos-escala/d9c9dc75-abfb-4595-9565-0878b57d0deb/scratchpad/linux.sh\")",
+      "Bash(MSYS_NO_PATHCONV=1 wsl -e bash -c \"bash /mnt/c/Users/cesar/AppData/Local/Temp/claude/c--Users-cesar-OneDrive-Documentos-projetos-escala/d9c9dc75-abfb-4595-9565-0878b57d0deb/scratchpad/linux.sh\")",
+      "Bash(MSYS_NO_PATHCONV=1 wsl -e bash -c \"python3 -m venv /tmp/tv 2>&1 | tail -5; echo '--- ensurepip? ---'; python3 -c 'import ensurepip' 2>&1 | tail -2; echo '--- pip do sistema ---'; python3 -m pip --version 2>&1 | tail -2\")",
+      "Bash(MSYS_NO_PATHCONV=1 wsl -e bash -c \"docker --version 2>&1 | head -2; echo '---'; docker info >/dev/null 2>&1 && echo 'daemon OK' || echo 'daemon nao responde'\")",
+      "Bash(MSYS_NO_PATHCONV=1 wsl -e bash -c \"bash /mnt/c/Users/cesar/AppData/Local/Temp/claude/c--Users-cesar-OneDrive-Documentos-projetos-escala/d9c9dc75-abfb-4595-9565-0878b57d0deb/scratchpad/docker.sh\")",
+      "Bash(MSYS_NO_PATHCONV=1 wsl -e bash -c \"docker run --rm -v /tmp:/t alpine sh -c 'rm -rf /t/tmp.*' 2>/dev/null; ls -d /tmp/tmp.* 2>/dev/null || echo 'temporarios removidos'; docker rmi -f escala-multiso >/dev/null 2>&1; echo 'imagem de teste removida'\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\cesar\\AppData\\Local\\Temp\\claude\\c--Users-cesar-OneDrive-Documentos-projetos-escala\\9fbfa581-3529-44c1-8afc-0ec33252d2e7\\scratchpad"
