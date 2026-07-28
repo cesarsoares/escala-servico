@@ -76,7 +76,9 @@
       "Bash(grep -n \"^#\\\\{1,3\\\\} \\\\|[Bb]ackup\" README.md)",
       "Bash(python -m pytest tests/test_gestao_web.py tests/test_auth.py tests/test_configuracao.py -q -p no:cacheprovider)",
       "Bash(python -m pytest tests/test_manual.py -q -p no:cacheprovider)",
-      "Bash(python -m pytest tests/test_painel.py tests/test_graficos.py tests/test_gestao_usabilidade.py tests/test_schema_sincronizado.py -q -p no:cacheprovider)"
+      "Bash(python -m pytest tests/test_painel.py tests/test_graficos.py tests/test_gestao_usabilidade.py tests/test_schema_sincronizado.py -q -p no:cacheprovider)",
+      "Bash(gh repo *)",
+      "Bash(git commit -am 'Permissão do gh acrescentada na mesma sessão *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\cesar\\AppData\\Local\\Temp\\claude\\c--Users-cesar-OneDrive-Documentos-projetos-escala\\9fbfa581-3529-44c1-8afc-0ec33252d2e7\\scratchpad"
