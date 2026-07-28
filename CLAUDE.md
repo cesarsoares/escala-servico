@@ -836,6 +836,105 @@ Testes em `tests/test_instalacao.py`; lógica em `app/services/instalacao.py`.
    - **Não entrou na barra de navegação** (ela já estourou duas vezes): chega-se
      pelo painel, pelo hub de Configurações e pelo manual.
 
+## Backup, restauração e exportação (feito — 2026-07-28)
+
+`/gestao/configuracao/backup` (7º cartão do hub; serviços em
+`app/services/backup.py` e `app/services/exportacao.py`; testes em
+`tests/test_backup.py`). O sistema roda **na OM** (regra 13.3): não há operação
+central que guarde nada — o backup que existe é o que alguém baixou.
+
+**Backup do banco É backup das configurações.** Desde as telas de Configuração,
+o `.env` guarda só `DATABASE_URL`, `TZ` e a sigla de reserva do 1º boot; OM da
+casa, postos/graduações com a ordem hierárquica, tipos, gestores, feriados e o
+contato do suporte moram no banco. O `dados/secret_key` fica **de fora de
+propósito**: é segredo, não é dado, e perdê-lo custa uma sessão derrubada.
+
+**Backup automático diário** em `dados/backups` (últimos 7) — ver a seção
+"Trocar de máquina" abaixo, que é o cenário que o exige.
+
+1. **Baixar** — `sqlite3.Connection.backup()`, **não** `shutil.copy`: com WAL,
+   copiar só o `.sqlite3` pode render arquivo sem as últimas gravações (foi
+   exatamente o que quebrou os primeiros testes, com a marca do Alembic presa no
+   `-wal`). A cópia sai da conexão da **própria sessão do pedido**, então vale
+   também no `:memory:` dos testes. É **POST**, não link: a tela grava
+   `ultimo_backup_em` (chave nova em `configuracao.CHAVES`) e o cartão do hub
+   cobra depois de `DIAS_SEM_BACKUP` (30).
+2. **Restaurar** — duas etapas (conferir → confirmar), como a ficha e o CSV. A
+   conferência mostra OM, contagens, último dia escalado, versão do banco e os
+   gestores **de dentro do arquivo**. Recusa: não é SQLite (magic bytes),
+   `quick_check` falha, sem `alembic_version`, ou revisão **mais nova** que a do
+   código (o Alembic sobe, não desce; mais antiga é aceita e migrada).
+   - Diferente do CSV, o conteúdo **não viaja no formulário** (um banco em
+     base64 seria megabytes por volta de página): fica em `dados/restauracao/`
+     com um token, e a etapa 2 **reinspeciona** antes de trocar.
+   - A troca: `engine.dispose()` → cópia datada do banco atual → apagar
+     `-wal`/`-shm` (**são do banco antigo; deixados no lugar corrompem o novo**)
+     → `os.replace` → migrar. Falhando a migração, o banco anterior **volta**.
+   - **Gestor ausente do backup: avisa e deixa seguir** (decisão do usuário,
+     28/07) — recusar impediria restaurar backup antigo depois de recriar
+     contas. A restauração é auditada no banco RESTAURADO, procurando o gestor
+     **pelo login** (os ids de lá são outros); não achando, fica sem autor, mas
+     nunca sem registro.
+3. **Exportar CSV (ZIP)** — coisa **diferente** de backup, e o `LEIA-ME.txt`
+   dentro do pacote diz isso na primeira linha. `servicos.csv` sai no formato
+   que `/gestao/importar` consome (fecha o par exportar/importar, testado nos
+   dois sentidos). CPF/identidade só com a caixa marcada — ZIP de planilha viaja
+   em pen drive fácil demais. Vale em PostgreSQL também: é só SQL.
+
+Em PostgreSQL a tela **não oferece** baixar/restaurar e explica `pg_dump` — um
+botão que produz arquivo que não restaura é pior que nenhum botão.
+
+⚠️ **Nome de arquivo é ASCII** (`backup.sigla_no_nome`): `isalnum()` deixa passar
+o `º` de "1º BI", e `Content-Disposition` é cabeçalho HTTP.
+
+### Trocar de máquina — o cenário que fechou o desenho (28/07, 2ª rodada)
+
+O usuário formulou o caso real: *"esta máquina está com problema, preciso subir
+outra com o estado de ontem"*. Ele expôs três buracos da 1ª rodada, todos
+fechados:
+
+1. **Na máquina nova não havia por onde restaurar.** A tela de backup exige
+   gestor logado, e banco vazio desvia o login para `/gestao/primeiro-acesso`.
+   Agora existe `/gestao/restaurar-instalacao` (router `router_instalacao` em
+   `web/gestao_backup.py`), **aberto só enquanto `instalacao.sem_gestor(db)`**,
+   rechecado no POST — mesma guarda do primeiro acesso, que também ganhou o
+   link. Termina no **login**, não no painel: quem restaurou não tem sessão, e a
+   senha válida é a que veio dentro do backup.
+   - Criar um gestor antes de restaurar **não** funciona: a restauração o apaga.
+     Está dito na tela e no manual.
+2. **"O dia anterior" só existe se alguém tiver clicado.** Entrou o **backup
+   automático diário** em `dados/backups`, **últimos 7** (`MANTER_AUTOMATICOS`),
+   com download por arquivo na tela — é assim que o estado de ontem sai da
+   máquina que está morrendo. Um por DIA e não por boot (`restart:
+   unless-stopped` encheria a pasta de cópias do mesmo estado, expulsando os
+   dias anteriores). Escreve em `.parcial` e só depois `os.replace`: arquivo
+   truncado por queda de energia pareceria bom.
+   - O laço vive no **lifespan da aplicação** (`main._laco_backup_diario`),
+     não num cron: o deploy é um container só, e pedir tarefa agendada ao TI da
+     OM é o passo que não acontece. `asyncio.to_thread` porque a cópia é I/O
+     bloqueante; falha só loga — escala no ar vale mais que cópia do dia.
+   - ⚠️ **`tests/conftest.py` desliga `settings.backup_automatico`.** Todo
+     `TestClient(app)` roda o lifespan, e `settings.database_url` nos testes
+     continua sendo o banco de desenvolvimento da raiz: ligado, `pytest`
+     encheria `./backups/` com cópias do banco real. É módulo, não fixture,
+     porque precisa valer antes do import dos testes.
+3. **A troca leva mais que o banco.** Manual, seção **2.7 Trocar de máquina**:
+   caminho curto (**copiar `dados/` inteira** — leva banco, `secret_key` e as
+   automáticas; ninguém é deslogado) e caminho longo (imagem nova + restaurar
+   pelo primeiro acesso). As três armadilhas: a chave de sessão não vai no
+   backup (**as senhas vão**, dentro do banco), o `TZ` do compose não vai (sem
+   ele a auditoria volta a mostrar 3h adiantado) e **imagem mais antiga na
+   máquina nova recusa o backup**.
+
+Também: `configuracao.versao_aplicacao` é **carimbada dentro do arquivo** a cada
+backup (`backup.carimbar_versao`, e `cfg.definir` antes de `copia()` na rota) e
+aparece na conferência. A revisão do Alembic é a checagem certa, mas ninguém
+decide "este arquivo serve?" olhando um hash às 22h.
+
+A conferência virou o parcial `templates/gestao/_conferencia_backup.html`, usado
+pelas **duas portas**: mesmo ato, mesmo risco — duas cópias divergiriam
+justamente no aviso que importa.
+
 ## Próximos passos sugeridos
 
 1. **WeasyPrint gerando o PDF pelo servidor** — já está instalado na imagem

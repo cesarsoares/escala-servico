@@ -116,6 +116,12 @@ AVISOS = {
     "senha-trocada": "Senha trocada.",
     "gestor-ativado": "Gestor reativado.",
     "gestor-desativado": "Gestor desativado — perdeu o acesso; o histórico dele fica.",
+    "backup-restaurado": "Banco restaurado a partir do backup. O banco que estava "
+                         "em uso foi guardado ao lado, com a data no nome. "
+                         "Confira o efetivo e o mês corrente antes de seguir.",
+    "backup-automatico-gerado": "Cópia automática de hoje gerada.",
+    "instalacao-restaurada": "Instalação restaurada. Entre com o login e a senha "
+                             "que já usavam — as senhas vieram dentro do backup.",
 }
 templates.env.globals["AVISOS"] = AVISOS
 

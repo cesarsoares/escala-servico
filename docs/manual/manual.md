@@ -203,6 +203,100 @@ Para tirar alguém de **uma escala só** (isenção permanente, regra 7.6), abra
 escala e **isente** o participante — o vínculo é desativado, não apagado, e
 reincluir depois reaproveita o mesmo vínculo.
 
+### 2.6 Backup: guardar a escala e recuperá-la
+
+O sistema roda **no servidor da sua OM**. Não existe cópia em lugar nenhum além
+da que alguém baixou — e por isso isto é tarefa do dia a dia, não de instalação.
+
+**Guardar.** Em **Configurações → Backup e restauração**, clique em *Baixar
+backup agora*. Vem um arquivo `.sqlite3` com **tudo**: efetivo, escalas,
+serviços, impedimentos, permutas, calendário, gestores, histórico e as próprias
+configurações. Guarde-o **fora deste servidor** — backup no mesmo disco que se
+perder não salva ninguém. O bom hábito é baixar **sempre que fechar o mês**: é
+aí que há trabalho novo a perder. Se passar de 30 dias, o sistema cobra na tela
+de Configurações.
+
+Baixar não atrapalha ninguém: a consulta continua respondendo enquanto a cópia é
+feita.
+
+**Recuperar.** Na mesma tela, envie o arquivo em *Restaurar*. O sistema
+**confere antes** e mostra de que OM é o backup, quantos militares e serviços
+tem, até quando vai e quais gestores existem lá dentro. Nada muda até você
+confirmar.
+
+Três coisas para saber antes de confirmar:
+
+- restaurar **substitui tudo**, inclusive gestores e senhas. O que foi lançado
+  depois da data do backup se perde;
+- se o **seu login não existir** no backup, você perde o acesso à gestão. A tela
+  avisa — e deixa seguir, porque às vezes é exatamente o que se quer. Nesse
+  caso, quem entra depois é um dos gestores listados;
+- o banco que estava em uso **não é apagado**: fica guardado ao lado, com a data
+  no nome (`escala-antes-da-restauracao-...`). Se algo der errado, a TI
+  recoloca esse arquivo.
+
+**As cópias automáticas.** O sistema guarda sozinho **uma por dia**, em
+`dados/backups`, mantendo as **últimas 7**. Elas existem para o dia em que a
+máquina dá problema e ninguém baixou nada na semana. Ficam no mesmo disco do
+banco: resolvem erro humano e troca de máquina, **não** resolvem disco perdido —
+para isso é preciso que o arquivo tenha saído do servidor.
+
+Na tela, cada cópia tem um botão *baixar*. É por ali que "o estado de ontem" sai
+da máquina que está morrendo. O botão *Gerar a cópia de hoje agora* serve para
+quem vai desligar o servidor em seguida e não pode esperar.
+
+**Exportar para planilha** é outra coisa, no mesmo lugar. Sai um `.zip` com os
+dados em CSV para abrir no Excel: efetivo, escalas, histórico de serviços,
+impedimentos, permutas, calendário e o histórico de alterações. **Não restaura o
+sistema** — serve para conferir, prestar informação, ou levar o histórico para
+outra instalação (o `servicos.csv` está no formato que a tela *Importar
+histórico* lê). CPF e identidade só entram se você marcar a caixa.
+
+### 2.7 Trocar de máquina
+
+O caso real: *"este servidor está com problema, precisamos subir outro com o
+estado de ontem"*. Há dois caminhos, e o primeiro é sempre melhor quando dá.
+
+**Caminho curto — copiar a pasta `dados/`.** Com acesso ao servidor antigo:
+
+1. pare o sistema: `docker compose stop`;
+2. copie a pasta **`dados/` inteira** para a máquina nova;
+3. lá, suba com o mesmo `docker compose up -d`.
+
+A pasta leva o banco, a **chave de sessão** e as cópias automáticas de uma vez.
+Ninguém é deslogado e não há o que conferir: é a mesma instalação, noutro
+hardware.
+
+**Caminho longo — só o arquivo de backup.** Quando o servidor antigo já não
+sobe, ou só sobrou o `.sqlite3` que alguém baixou:
+
+1. instale o sistema na máquina nova (`docker compose up -d`);
+2. abra `/gestao`. Como não há gestor, ele leva ao **primeiro acesso** — ali,
+   escolha **"restaure a partir dele"**, não crie acesso novo;
+3. envie o arquivo. O sistema mostra de que OM é, quantos militares e serviços
+   tem, **até quando vai** e qual versão o gerou;
+4. confirme e entre com **o login e a senha de sempre** — as senhas vêm dentro
+   do backup.
+
+Se você criar um gestor antes de restaurar, ele será apagado pela restauração:
+o backup traz os gestores dele. Por isso a ordem acima.
+
+**Três coisas que o backup não leva** e que precisam ser conferidas na máquina
+nova:
+
+- **a chave de sessão** (`dados/secret_key`) — de propósito. A máquina nova gera
+  a sua, e todo mundo precisa entrar de novo. As **senhas continuam as mesmas**;
+- **o fuso horário** (`TZ` no `docker-compose.yml`). Sem ele, o Histórico volta a
+  mostrar os horários 3h adiantados;
+- **a versão do sistema.** Se a máquina nova rodar uma imagem **mais antiga** que
+  a de origem, o backup é **recusado** — atualize a imagem antes. O contrário
+  funciona: backup mais antigo é aceito e atualizado na hora.
+
+**Até onde vai o que foi restaurado?** A conferência mostra a *última alteração
+registrada* e o *último dia escalado* do arquivo. Tudo o que foi lançado no
+servidor antigo depois disso se perdeu — confira o mês corrente no Painel antes
+de seguir escalando.
+
 ---
 
 ## 3. Consultar e imprimir
@@ -311,6 +405,20 @@ Não. Vale da próxima escalação em diante.
 **Posso apagar uma escala?**
 Não; **extinga**. Apagar levaria junto os serviços gravados nela e a folga que
 deles decorre. O mesmo vale para um posto que já tenha serviço gravado.
+
+**Com que frequência devo baixar o backup?**
+Ao fechar cada mês, no mínimo. Passados 30 dias sem baixar, o cartão *Backup e
+restauração* em Configurações passa a cobrar. Guarde o arquivo fora do servidor.
+
+**Alguém apagou o mês errado. Dá para voltar?**
+Só a partir de um backup (item 2.6). Não há "desfazer": o **Histórico** registra
+quem fez o quê, mas não reverte. É a razão de o backup ser tarefa de rotina.
+
+**A exportação em CSV serve de backup?**
+Não. Ela é para **ler** os dados fora do sistema — Excel, conferência, prestação
+de informação. Quem restaura a instalação é o arquivo `.sqlite3`. O
+`servicos.csv` da exportação, esse sim, entra numa instalação nova pela tela
+*Importar histórico*.
 
 **Perdi a senha do único gestor.**
 A TI local recria pelo terminal do servidor, com

@@ -1,0 +1,131 @@
+{% extends "gestao/config/_base.html" %}
+{% block secao %}
+
+{% if retrato %}
+{# Enquanto a conferência está na tela, nada mais aparece: é uma decisão, e os
+   botões de baixar/exportar ao lado só distrairiam de uma coisa que substitui a
+   instalação inteira. #}
+{% with acao_confirmar = "/gestao/configuracao/backup/restaurar/confirmar",
+        acao_cancelar = "/gestao/configuracao/backup" %}
+  {% include "gestao/_conferencia_backup.html" %}
+{% endwith %}
+
+{% else %}
+
+{# --- 1. baixar ------------------------------------------------------------ #}
+<h3>1. Baixar backup</h3>
+<p class="sub">Um arquivo com o banco inteiro: efetivo, escalas, serviços,
+  impedimentos, permutas, calendário, gestores, histórico <strong>e todas as
+  configurações</strong> — o que está em Configurações mora no banco, não em
+  arquivo de instalação. É este arquivo que restaura o sistema, aqui ou
+  <strong>em outra máquina</strong>.</p>
+
+{% if em_arquivo %}
+<p class="sub">Guarde-o <strong>fora deste servidor</strong>: um backup no mesmo
+  disco que se perder não salva ninguém. O arquivo é lido enquanto o sistema
+  continua no ar, sem parar a consulta.</p>
+
+{# Azul institucional, não o vermelho de alerta, mesmo faltando backup: o
+   vermelho desta interface está reservado para "alguém vai deixar de entrar de
+   serviço". Gastá-lo aqui enfraquece o sinal onde ele decide escala. #}
+<div class="situacao {{ 'instalando' if cartao and cartao.pendencia else 'calma' }}">
+  <h3>{{ cartao.estado if cartao else '' }}</h3>
+  <p>{% if ultimo_backup %}Baixe de novo sempre que fechar o mês — é aí que há
+     trabalho novo a perder.{% else %}Nunca foi baixado um backup desta
+     instalação.{% endif %}</p>
+</div>
+
+<form method="post" action="/gestao/configuracao/backup/baixar" class="formulario">
+  <button type="submit">Baixar backup agora</button>
+</form>
+<p class="sub">Banco desta instalação: <code class="num-mono">{{ caminho }}</code>.
+  A chave que assina a sessão dos gestores <strong>não</strong> vai no backup, de
+  propósito: é segredo, e perdê-la só derruba as sessões abertas — as senhas
+  continuam valendo, porque vão dentro do banco.</p>
+
+{# --- 2. automáticos ------------------------------------------------------- #}
+<h3>2. Cópias automáticas do dia</h3>
+<p class="sub">O sistema guarda sozinho <strong>uma cópia por dia</strong>, em
+  <code class="num-mono">{{ caminho.parent }}/backups</code>, mantendo as últimas
+  {{ manter }}. É o que responde a <em>“a máquina deu problema, preciso do estado
+  de ontem”</em> — que não sobrevive a depender de alguém ter clicado. Ficam no
+  mesmo disco: servem para erro humano e troca de máquina, <strong>não</strong>
+  para disco perdido.</p>
+
+{% if automaticos %}
+<table class="tabela">
+  <thead><tr><th>Dia</th><th>Tamanho</th><th></th></tr></thead>
+  <tbody>
+  {% for a in automaticos %}
+    <tr>
+      <td>{{ a.dia.strftime('%d/%m/%Y') }}</td>
+      <td class="num-mono">{{ (a.tamanho / 1024) | round | int }} KB</td>
+      <td class="acoes-linha">
+        <a class="botao mini secundario"
+           href="/gestao/configuracao/backup/automatico/{{ a.nome }}">baixar</a>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="vazio">Ainda não há cópia automática. A primeira sai na próxima hora,
+  ou agora, no botão abaixo.</p>
+{% endif %}
+
+<form method="post" action="/gestao/configuracao/backup/automatico" class="formulario">
+  <button class="secundario" type="submit">Gerar a cópia de hoje agora</button>
+</form>
+
+{% else %}
+<p class="alerta-caixa">Esta instalação não guarda o banco num arquivo
+  (<code>DATABASE_URL</code> aponta para outro banco). O backup aqui é
+  <code>pg_dump</code>, feito por quem administra o servidor do banco — um botão
+  nesta tela produziria um arquivo que não restaura nada. A exportação em CSV
+  abaixo continua valendo.</p>
+{% endif %}
+
+{# --- 3. exportar ---------------------------------------------------------- #}
+<h3>3. Exportar dados em CSV</h3>
+<p class="sub">Um pacote <code>.zip</code> com os dados em planilha, para abrir no
+  Excel, conferir contagens ou prestar informação. <strong>Não restaura o
+  sistema</strong> — para isso é o backup acima. O <code>servicos.csv</code> sai
+  no mesmo formato que a tela <a href="/gestao/importar">Importar histórico</a>
+  lê: é por ele que se leva o passado para uma instalação nova.</p>
+
+<form method="post" action="/gestao/configuracao/backup/exportar" class="formulario">
+  <label class="check">
+    <input type="checkbox" name="dados_pessoais" value="1">
+    <span>Incluir CPF e identidade do efetivo</span>
+  </label>
+  <button type="submit">Baixar exportação</button>
+</form>
+<p class="sub">Desmarcado, o arquivo sai sem dado pessoal — é o padrão porque ZIP
+  de planilha viaja em pen drive e anexo de e-mail com facilidade demais.</p>
+
+{# --- 4. restaurar --------------------------------------------------------- #}
+<h3>4. Restaurar a partir de um backup</h3>
+{% if em_arquivo %}
+<p class="sub">Envie um arquivo <code>.sqlite3</code> baixado desta tela. O
+  sistema <strong>confere antes</strong>: mostra de que OM é, quantos militares e
+  serviços tem, até quando vai e qual versão o gerou. Só depois de você confirmar
+  é que algo muda.</p>
+
+<form method="post" action="/gestao/configuracao/backup/restaurar"
+      enctype="multipart/form-data" class="importar">
+  <label>Arquivo de backup
+    <input type="file" name="arquivo" accept=".sqlite3,.db,application/octet-stream"></label>
+  <button type="submit">Conferir arquivo</button>
+</form>
+<p class="sub">Backup feito por uma versão <em>anterior</em> do sistema é aceito e
+  atualizado na hora. Feito por uma versão <em>mais nova</em> é recusado: o banco
+  sobe de versão, nunca desce — atualize a aplicação primeiro. Trocando de
+  máquina, veja o passo a passo no <a href="/manual#27-trocar-de-maquina">manual</a>.</p>
+{% else %}
+<p class="sub">Restauração por arquivo só existe quando o banco é um arquivo
+  local. Aqui, quem restaura é a TI do servidor do banco, com
+  <code>pg_restore</code>.</p>
+{% endif %}
+
+{% endif %}
+{% endblock %}

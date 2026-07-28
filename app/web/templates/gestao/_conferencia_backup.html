@@ -1,0 +1,70 @@
+{# Conferência do backup — etapa 1 de 2, comum às DUAS portas de restauração:
+   a de Configurações (gestor logado) e a do primeiro acesso (máquina nova,
+   banco vazio). Marcação única de propósito: são o mesmo ato e o mesmo risco,
+   e duas cópias divergiriam justamente no aviso que importa.
+
+   Espera no contexto: `retrato`, `token`, `acao_confirmar`, `acao_cancelar` e
+   `eu` (login de quem está restaurando, ou vazio no primeiro acesso). #}
+<div class="resultado">
+  <h3>Confira o backup antes de restaurar</h3>
+  <p class="sub">Nada foi trocado ainda. Isto é o que existe <strong>dentro do
+    arquivo enviado</strong> — compare com o que você espera antes de confirmar.</p>
+
+  <dl class="retrato">
+    <dt>OM do backup</dt><dd>{{ retrato.om }}</dd>
+    <dt>Efetivo ativo</dt><dd class="num-mono">{{ retrato.militares }}</dd>
+    <dt>Escalas ativas</dt><dd class="num-mono">{{ retrato.escalas }}</dd>
+    <dt>Serviços gravados</dt><dd class="num-mono">{{ retrato.servicos }}</dd>
+    <dt>Impedimentos</dt><dd class="num-mono">{{ retrato.impedimentos }}</dd>
+    <dt>Último dia escalado</dt>
+    <dd>{{ retrato.ultimo_servico.strftime('%d/%m/%Y') if retrato.ultimo_servico else '—' }}</dd>
+    {# Não é a data do backup: um arquivo SQLite não guarda quando foi copiado.
+       É até onde chega o trabalho registrado — que é o que de fato interessa
+       para responder "este é o estado de ontem?". #}
+    <dt>Última alteração registrada</dt>
+    <dd>{{ retrato.ultima_alteracao | hora_local }}</dd>
+    <dt>Tamanho</dt>
+    <dd class="num-mono">{{ (retrato.tamanho / 1024) | round | int }} KB</dd>
+    <dt>Gerado pela versão</dt>
+    <dd class="num-mono">{{ retrato.versao or '(não registrada)' }}
+      <span class="fraco">— esta instalação é a {{ retrato.versao_atual }}</span></dd>
+    <dt>Versão do banco</dt>
+    <dd class="num-mono">{{ retrato.revisao }}{% if retrato.precisa_migrar %}
+      <span class="tag">será atualizado para {{ retrato.revisao_atual }}</span>{% endif %}</dd>
+    <dt>Gestores no backup</dt>
+    <dd>{% for g in retrato.gestores %}{{ g.login }}{% if not g.ativo %}
+        <span class="tag">inativo</span>{% endif %}{{ ", " if not loop.last }}
+      {% else %}nenhum{% endfor %}</dd>
+  </dl>
+
+  {% if eu and not retrato.tem_gestor(eu) %}
+  {# A trava que o gestor decidiu não ser bloqueio: avisa e deixa seguir. Recusar
+     impediria o caso legítimo (restaurar backup antigo depois de recriar contas). #}
+  <p class="alerta-caixa"><strong>Atenção: o seu login ({{ eu }}) não existe como
+    gestor ativo neste backup.</strong> Restaurando, você perde o acesso à gestão
+    assim que sair. Quem entra depois é um dos gestores listados acima — e, se
+    ninguém souber essas senhas, só a TI recria o acesso pelo terminal
+    (<code>docker compose exec app python -m app.seeds.usuario &lt;login&gt; "&lt;nome&gt;"</code>).</p>
+  {% endif %}
+
+  {% if eu %}
+  <p class="alerta-caixa"><strong>Restaurar substitui TUDO</strong> — efetivo,
+    escalas, serviços, impedimentos, permutas, gestores, senhas e histórico. Tudo
+    o que foi lançado depois deste backup se perde. O banco que está em uso agora
+    será guardado ao lado, com a data no nome, para o caso de arrependimento.</p>
+  {% else %}
+  {# Primeiro acesso: não há o que perder no banco (está vazio). O que a pessoa
+     precisa saber é COMO entrar depois — a senha é a do backup, não uma nova. #}
+  <p class="alerta-caixa">Esta instalação está vazia, então não há nada a perder
+    aqui. Depois de restaurar, entre com <strong>o login e a senha que já
+    usavam</strong> na instalação de origem — as senhas viajam dentro do backup.
+    Se não houver gestor no arquivo, a tela de primeiro acesso volta a aparecer.</p>
+  {% endif %}
+
+  <form method="post" action="{{ acao_confirmar }}" class="formulario"
+        onsubmit="return confirm('Restaurar o backup de {{ retrato.om }}? Esta ação não se desfaz sozinha.')">
+    <input type="hidden" name="token" value="{{ token }}">
+    <button class="perigo" type="submit">Restaurar este backup</button>
+    <a class="botao secundario" href="{{ acao_cancelar }}">Cancelar</a>
+  </form>
+</div>

@@ -78,7 +78,32 @@ alembic upgrade head
 uvicorn app.main:app --reload      # http://localhost:8000
 ```
 
-**Backup** é copiar o arquivo do banco (`dados/escala.sqlite3`).
+## Backup e troca de máquina
+
+O sistema guarda sozinho **uma cópia por dia** em `dados/backups/`, mantendo as
+últimas 7. Em **Configurações → Backup e restauração** o gestor baixa o backup
+completo, baixa qualquer uma das cópias automáticas, restaura a partir de um
+arquivo e exporta os dados em CSV — sem terminal.
+
+As cópias automáticas ficam no mesmo disco: resolvem erro humano e troca de
+máquina, **não** resolvem disco perdido. Guarde fora do servidor o arquivo que
+a tela gera.
+
+**Trocar de servidor:**
+
+```bash
+docker compose stop            # na máquina antiga
+# copie a pasta dados/ inteira para a nova (banco + chave de sessão + cópias)
+docker compose up -d           # na máquina nova
+```
+
+Tendo só o arquivo `.sqlite3`, suba o sistema na máquina nova e restaure pela
+tela: `/gestao` leva ao primeiro acesso, que oferece **"restaure a partir dele"**
+— não crie um gestor antes, a restauração o apagaria. Detalhe no
+[manual](docs/manual/manual.md), seção *2.7 Trocar de máquina*.
+
+⚠️ A máquina nova não pode rodar uma imagem **mais antiga** que a de origem: o
+banco sobe de versão, nunca desce, e o backup é recusado.
 
 ## Testes
 

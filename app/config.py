@@ -56,6 +56,12 @@ class Settings(BaseSettings):
     # os endpoints de gestão exigem o token JWT assinado com secret_key.
     jwt_algoritmo: str = "HS256"
     token_expira_min: int = 12 * 60       # 12h — turno de serviço
+    # Backup automático diário em dados/backups (últimos 7). Ligado por padrão:
+    # o cenário que o justifica — "esta máquina está com problema, preciso subir
+    # outra com o estado de ontem" — não sobrevive a depender de alguém lembrar
+    # de clicar. Desligar só faz sentido em teste ou quando o backup é feito por
+    # fora (snapshot de VM, rotina do próprio TI).
+    backup_automatico: bool = True
     # Defaults sugeridos ao CRIAR uma escala nova. A folga e a janela reais são
     # atributos de cada escala (regras 7.2 e 2.4), não constantes globais.
     folga_minima_horas: int = 48          # regra 7.2.1 (default sugerido)

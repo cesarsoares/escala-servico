@@ -4,6 +4,11 @@
 <div class="login-box">
   <h2>Gestão da escala</h2>
   <p class="sub">Acesso restrito aos gestores (regra 11).</p>
+  {# A confirmação da restauração cai AQUI: quem restaurou numa máquina nova não
+     tem sessão, e é aqui que precisa ler que a senha a usar é a antiga. O
+     base_gestao, que normalmente exibe os AVISOS, não vale para esta tela. #}
+  {% set ok = AVISOS.get(request.query_params.get('ok')) %}
+  {% if ok %}<p class="sucesso" role="status">{{ ok }}</p>{% endif %}
   {% if erro %}<p class="erro">{{ erro }}</p>{% endif %}
   {# O login diferencia maiúsculas. Celular e navegador capitalizam a primeira
      letra de campo de texto por conta própria, transformando 'brigada' em

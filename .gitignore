@@ -8,6 +8,9 @@ venv/
 *.sqlite3-shm
 *.db
 dados/
+# Cópias automáticas do banco de desenvolvimento (em produção vivem em dados/).
+backups/
+restauracao/
 
 # Dados pessoais reais — não versionar (fichas com CPF/identidade/endereço e o
 # efetivo da OM na planilha do brigada).

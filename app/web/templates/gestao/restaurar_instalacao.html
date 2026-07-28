@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Restaurar instalação — Gestão{% endblock %}
+{% block content %}
+{% if retrato %}
+{% with acao_confirmar = "/gestao/restaurar-instalacao/confirmar",
+        acao_cancelar = "/gestao/restaurar-instalacao", eu = "" %}
+  {% include "gestao/_conferencia_backup.html" %}
+{% endwith %}
+{% else %}
+<div class="login-box">
+  <h2>Restaurar de um backup</h2>
+  <p class="sub">Trocando de máquina ou repondo um servidor? Envie o arquivo
+    <code>.sqlite3</code> da instalação antiga e esta máquina assume o estado
+    dele — efetivo, escalas, serviços, configurações, gestores e senhas.</p>
+  {% if erro %}<p class="erro">{{ erro }}</p>{% endif %}
+
+  {% if em_arquivo %}
+  <form method="post" action="/gestao/restaurar-instalacao" enctype="multipart/form-data">
+    <label>Arquivo de backup
+      <input type="file" name="arquivo" accept=".sqlite3,.db,application/octet-stream"></label>
+    <p class="sub">Nada é gravado agora: a próxima tela mostra de que OM é o
+      arquivo, quantos militares e serviços tem e até quando vai. Você confirma
+      depois de conferir.</p>
+    <button type="submit">Conferir arquivo</button>
+  </form>
+
+  {# Dito aqui, e não só no manual: é o erro que só aparece depois, quando o
+     backup é recusado por vir de uma versão mais nova. #}
+  <p class="sub"><strong>Se esta máquina roda uma versão mais antiga</strong> do
+    sistema que a de origem, o backup será recusado — atualize a imagem antes.
+    E o caminho mais curto de todos, quando se tem acesso ao servidor antigo, é
+    copiar a pasta <code>dados/</code> inteira: ela leva o banco, a chave de
+    sessão e as cópias automáticas de uma vez.</p>
+  {% else %}
+  <p class="alerta-caixa">Esta instalação não guarda o banco num arquivo local —
+    restaurar aqui é trabalho de quem administra o servidor do banco.</p>
+  {% endif %}
+
+  <p class="sub"><a href="/gestao/primeiro-acesso">← instalação nova, do zero</a>
+    &nbsp;·&nbsp; <a href="/">voltar à consulta</a></p>
+</div>
+{% endif %}
+{% endblock %}

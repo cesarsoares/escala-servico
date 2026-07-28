@@ -1,5 +1,8 @@
 """Ponto de entrada da aplicação FastAPI."""
+import asyncio
 import calendar
+import logging
+from contextlib import asynccontextmanager
 from datetime import date
 from pathlib import Path
 
@@ -10,6 +13,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app import VERSAO
+from app.config import settings
 from app.api import (
     auditoria_gestao, auth, calendario_gestao, escalas, escalas_gestao,
     impedimentos_gestao, militares, militares_gestao, permutas_gestao, servicos,
@@ -24,6 +28,9 @@ from app.services import calendario_service, publicacao
 from app.web import ANO_MAX, ANO_MIN, templates
 from app.web.gestao import NaoLogado, router as gestao_router
 from app.web.gestao_auditoria import router as gestao_auditoria_router
+from app.web.gestao_backup import (
+    router as gestao_backup_router, router_instalacao as restaurar_instalacao_router,
+)
 from app.web.gestao_config import router as gestao_config_router
 from app.web.gestao_escalas import router as gestao_escalas_router
 from app.web.gestao_importacao import router as gestao_importacao_router
@@ -54,7 +61,42 @@ def identificar_om(request: Request, db: Session = Depends(get_db)) -> None:
         pass
 
 
+async def _laco_backup_diario() -> None:
+    """Mantém o backup do dia em `dados/backups` enquanto a aplicação viver.
+
+    Roda dentro da aplicação, e não num cron do sistema, porque o deploy é um
+    container só (regra 13.3): pedir ao TI da OM que configure uma tarefa
+    agendada no servidor é justamente o tipo de passo que não acontece.
+
+    `to_thread` porque a cópia é I/O bloqueante do SQLite — no laço de eventos
+    ela travaria a consulta aberta durante o backup. Falha de backup **nunca**
+    derruba a aplicação: escala no ar vale mais que cópia do dia, e o cartão de
+    Configurações denuncia a ausência.
+    """
+    from app.services import backup as bkp
+
+    while True:
+        try:
+            await asyncio.to_thread(bkp.gerar_automatico)
+        except Exception:                                    # noqa: BLE001
+            logging.getLogger(__name__).exception("falha ao gerar backup automático")
+        await asyncio.sleep(bkp.INTERVALO_CHECAGEM.total_seconds())
+
+
+@asynccontextmanager
+async def ciclo_de_vida(_: FastAPI):
+    from app.services import backup as bkp
+
+    tarefa = None
+    if settings.backup_automatico and bkp.eh_arquivo():
+        tarefa = asyncio.create_task(_laco_backup_diario())
+    yield
+    if tarefa is not None:
+        tarefa.cancel()
+
+
 app = FastAPI(title="Escala de Serviço", version=VERSAO,
+              lifespan=ciclo_de_vida,
               dependencies=[Depends(identificar_om)])
 app.mount("/static", StaticFiles(directory=BASE / "web" / "static"), name="static")
 
@@ -83,6 +125,9 @@ app.include_router(gestao_router)
 app.include_router(gestao_escalas_router)
 app.include_router(gestao_auditoria_router)
 app.include_router(gestao_config_router)
+app.include_router(gestao_backup_router)
+# Aberta SÓ enquanto não existe gestor: é a porta da máquina nova (ver o router).
+app.include_router(restaurar_instalacao_router)
 app.include_router(gestao_importacao_router)
 # Manual de uso: aberto, porque explica também a consulta (regra 13.1).
 app.include_router(manual_router)

@@ -9,6 +9,8 @@ fichas_exemplo/
 *.sqlite3-wal
 *.sqlite3-shm
 dados/
+backups/
+restauracao/
 *.xlsx
 *.ods
 

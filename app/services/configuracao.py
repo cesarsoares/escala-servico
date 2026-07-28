@@ -25,6 +25,7 @@ Regras que este módulo faz valer, e o porquê de cada uma:
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -44,6 +45,14 @@ CHAVES: dict[str, str] = {
     # Aparece no rodapé de todas as telas. É a informação que falta quando algo
     # dá errado numa OM e ninguém sabe a quem recorrer.
     "suporte_contato": "",
+    # Quando alguém baixou o último backup (ISO). É a única coisa da tela de
+    # backup que o sistema não consegue descobrir sozinho — e sem ela não há
+    # como cobrar quem esqueceu. Gravada por `web/gestao_backup.baixar`.
+    "ultimo_backup_em": "",
+    # Versão da aplicação, carimbada a cada backup para viajar DENTRO do arquivo.
+    # É o que a conferência da restauração mostra: a revisão do Alembic é a
+    # checagem certa, mas ninguém decide "este arquivo serve?" olhando um hash.
+    "versao_aplicacao": "",
 }
 
 PASSO_ORDEM = 10          # espaçamento da renumeração hierárquica
@@ -144,7 +153,47 @@ def panorama(db: Session) -> list[Cartao]:
             pendencia="nenhum serviço registrado — sem histórico o motor começa "
                       "com todos empatados em \"nunca serviu\"" if not n_servicos else "",
         ),
+        _cartao_backup(db),
     ]
+
+
+# Depois de quantos dias sem backup a tela passa a cobrar. Um mês é o ciclo do
+# trabalho aqui: fechada a escala do mês, há o que perder.
+DIAS_SEM_BACKUP = 30
+
+
+def _cartao_backup(db: Session) -> Cartao:
+    """O último cartão, e o único que não é passo de instalação.
+
+    Vem depois de todos porque só faz sentido com dados dentro; e vem cobrando,
+    porque uma instalação local (regra 13.3) não tem operação central que guarde
+    nada — o backup que existe é o que alguém baixou.
+    """
+    marca = valor(db, "ultimo_backup_em")
+    quando = None
+    if marca:
+        try:
+            quando = datetime.fromisoformat(marca)
+        except ValueError:
+            quando = None
+
+    if quando is None:
+        estado = "nenhum backup baixado"
+        pendencia = ("nenhum backup baixado — se este servidor se perder, não há "
+                     "de onde recuperar a escala")
+    else:
+        dias = (datetime.now() - quando).days
+        estado = f"último backup em {quando:%d/%m/%Y %H:%M}"
+        pendencia = (f"o último backup foi há {dias} dias" if dias >= DIAS_SEM_BACKUP
+                     else "")
+
+    return Cartao(
+        "backup", "Backup e restauração",
+        "Baixar o banco inteiro num arquivo, restaurar a partir dele e exportar "
+        "os dados em CSV. É o que salva a instalação (regra 13.3).",
+        "/gestao/configuracao/backup", "cofre",
+        estado=estado, pendencia=pendencia,
+    )
 
 
 # --- chave/valor --------------------------------------------------------------
