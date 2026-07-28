@@ -61,7 +61,9 @@
       "Bash(rm -f dados/secret_key)",
       "Bash(SECRET_KEY=chave-do-ambiente-com-mais-de-32-bytes-ok python -c ' *)",
       "Bash(grep -n \"^\\\\.\\\\|^/\\\\*\" app/web/static/graficos.css)",
-      "Bash(python -m pytest tests/test_instalacao.py -q)"
+      "Bash(python -m pytest tests/test_instalacao.py -q)",
+      "PowerShell($script = \"/mnt/c/Users/cesar/AppData/Local/Temp/claude/c--Users-cesar-OneDrive-Documentos-projetos-escala/1709729f-1cf5-4617-8d41-862e744a2d2a/scratchpad/atualizar2.sh\")",
+      "Bash(git rm *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\cesar\\AppData\\Local\\Temp\\claude\\c--Users-cesar-OneDrive-Documentos-projetos-escala\\9fbfa581-3529-44c1-8afc-0ec33252d2e7\\scratchpad"

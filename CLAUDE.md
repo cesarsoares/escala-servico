@@ -62,17 +62,26 @@ uvicorn app.main:app --reload        # http://localhost:8000
 # (Validado em 2026-07-25 com Docker 29.6 no WSL2; a imagem sai com 502 MB —
 #  as libs do WeasyPrint respondem pela maior parte.)
 docker compose up --build
-docker compose exec app python -m app.seeds.usuario brigada "Sgt Brigada"  # 1º gestor
 
-# Em produção, defina a chave de sessão antes de subir (>= 32 bytes):
-#   SECRET_KEY=$(python -c "import secrets; print(secrets.token_urlsafe(48))") docker compose up -d
+# NÃO é preciso mais nada: o 1º gestor é criado pela tela (/gestao leva a
+# /gestao/primeiro-acesso enquanto o banco não tiver usuário) e a chave de
+# sessão é gerada no 1º boot em /dados/secret_key. O CLI abaixo continua como
+# socorro para senha perdida:
+#   docker compose exec app python -m app.seeds.usuario brigada "Sgt Brigada"
 
 # Backup: copiar o arquivo (com o app parado, ou via .backup)
 cp dados/escala.sqlite3 /destino/
-
-# Alternativa com PostgreSQL
-docker compose -f docker-compose.postgres.yml up --build
 ```
+
+**PostgreSQL** continua suportado (só apontar `DATABASE_URL`; `psycopg` já está
+nas dependências). O `docker-compose.postgres.yml` foi **apagado em 27/07**: era
+do commit inicial e nunca acompanhou o compose principal — ficou sem `TZ` (a
+auditoria voltaria a mostrar 3h adiantado), sem `restart`, e com a
+`SECRET_KEY` padrão que saiu do projeto por ser insegura. Pior ainda: sem o
+volume `/dados`, a chave gerada morreria a cada `recreate`, deslogando todo
+mundo. Uma receita que ninguém roda apodrece em silêncio — e induz a uma
+instalação pior que a padrão. Se o PG voltar a ser necessário, escreva o compose
+a partir do atual, que é o que está em uso.
 
 ## Arquitetura (onde as coisas moram)
 

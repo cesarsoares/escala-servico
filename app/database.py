@@ -3,7 +3,8 @@
 O banco padrão é **SQLite** — uma instalação por OM, um escritor (o gestor) e
 muitos leitores (a consulta é aberta). O volume é pequeno: uma OM gera alguns
 milhares de serviços por ano. PostgreSQL continua suportado: basta apontar
-`DATABASE_URL` para ele (ver docker-compose.postgres.yml).
+`DATABASE_URL` para ele (`psycopg` já está nas dependências) — nada no código
+depende de recurso exclusivo de um dos dois bancos.
 
 O SQLite exige três PRAGMAs por conexão para se comportar como esperado —
 sem eles, as FKs declaradas nos models são decorativas.

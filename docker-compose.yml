@@ -4,8 +4,8 @@
 # aberta) — perfil em que o SQLite basta de sobra. Backup = copiar o arquivo
 # ./dados/escala.sqlite3.
 #
-# Para usar PostgreSQL:
-#     docker compose -f docker-compose.postgres.yml up --build
+# Para usar PostgreSQL, aponte DATABASE_URL para ele e acrescente o serviço do
+# banco — o código é o mesmo, nada depende de recurso exclusivo de um dos dois.
 services:
   app:
     build: .
