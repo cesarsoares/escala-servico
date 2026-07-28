@@ -55,7 +55,13 @@
       "Bash(git ls-remote *)",
       "Bash(git ls-tree *)",
       "Bash(grep -iE \"sqlite|xlsx|\\\\.ods$|fichas_exemplo|^\\\\.env$|settings.local\")",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(git branch *)",
+      "Bash(git fetch *)",
+      "Bash(rm -f dados/secret_key)",
+      "Bash(SECRET_KEY=chave-do-ambiente-com-mais-de-32-bytes-ok python -c ' *)",
+      "Bash(grep -n \"^\\\\.\\\\|^/\\\\*\" app/web/static/graficos.css)",
+      "Bash(python -m pytest tests/test_instalacao.py -q)"
     ],
     "additionalDirectories": [
       "C:\\Users\\cesar\\AppData\\Local\\Temp\\claude\\c--Users-cesar-OneDrive-Documentos-projetos-escala\\9fbfa581-3529-44c1-8afc-0ec33252d2e7\\scratchpad"

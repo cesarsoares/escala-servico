@@ -31,6 +31,8 @@ from app.models.servico import Permuta, Servico
 from app.normalizacao import so_digitos
 from app.security import criar_token, hash_dummy, ler_token, verificar_senha
 from app.services import auditoria, importacao, rotacao
+from app.services import configuracao as cfg
+from app.services import instalacao
 from app.services import painel as painel_service
 from app.services import permuta as permuta_service
 from app.services.publicacao import DIAS_SEMANA, MESES
@@ -62,9 +64,64 @@ def gestor_web(
     return usuario
 
 
+# --- Primeiro acesso (regra 11) ---
+# Instalação recém-subida não tem gestor nenhum, e a gestão exige login: sem
+# esta tela, o único caminho para entrar seria a linha de comando dentro do
+# container (`python -m app.seeds.usuario`). Para a seção de TI que recebeu só
+# a imagem, isso é uma parede na porta. O CLI continua existindo — é o socorro
+# para senha perdida, que a tela (fechada assim que há gestor) não resolve.
+@router.get("/primeiro-acesso", response_class=HTMLResponse)
+def primeiro_acesso_form(request: Request, db: Session = Depends(get_db),
+                         erro: str | None = None, v: dict | None = None):
+    if not instalacao.sem_gestor(db):
+        return RedirectResponse("/gestao/login", status_code=303)
+    return templates.TemplateResponse(request, "gestao/primeiro_acesso.html", {
+        "erro": erro, "v": v or {}, "senha_minima": cfg.SENHA_MINIMA,
+    })
+
+
+@router.post("/primeiro-acesso", response_class=HTMLResponse)
+def primeiro_acesso(
+    request: Request, login: str = Form(""), nome: str = Form(""),
+    senha: str = Form(""), senha2: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    """Cria o PRIMEIRO gestor e já o deixa logado.
+
+    A checagem de "não existe gestor" é refeita aqui, e não só no GET: entre
+    abrir a tela e enviá-la, alguém pode ter criado o gestor pelo CLI — e esta
+    rota não pode virar um cadastro aberto de gestores.
+    """
+    if not instalacao.sem_gestor(db):
+        return RedirectResponse("/gestao/login", status_code=303)
+    digitado = {"login": login, "nome": nome}
+    try:
+        usuario = cfg.criar_gestor(db, login, nome, senha, senha2)
+    except cfg.ErroConfiguracao as e:
+        return templates.TemplateResponse(request, "gestao/primeiro_acesso.html", {
+            "erro": str(e), "v": digitado, "senha_minima": cfg.SENHA_MINIMA,
+        }, status_code=400)
+    # Auditoria (regra 11): o próprio gestor recém-criado responde pelo ato —
+    # não há outro a quem atribuir, e a criação não pode ficar sem registro.
+    auditoria.registrar(db, usuario_id=usuario.id, entidade="usuario",
+                        entidade_id=usuario.id, acao="criar",
+                        depois=auditoria.snapshot(usuario))
+    db.commit()
+    # Entra direto no assistente: acabou de criar o acesso, o passo seguinte é
+    # dizer qual é a OM — não faz sentido devolver a pessoa para o login.
+    resp = RedirectResponse("/gestao/instalacao?ok=primeiro-gestor", status_code=303)
+    resp.set_cookie(
+        "access_token", criar_token(usuario.id),
+        httponly=True, samesite="lax", max_age=settings.token_expira_min * 60,
+    )
+    return resp
+
+
 # --- Login / logout ---
 @router.get("/login", response_class=HTMLResponse)
-def login_form(request: Request, erro: str | None = None):
+def login_form(request: Request, db: Session = Depends(get_db), erro: str | None = None):
+    if instalacao.sem_gestor(db):
+        return RedirectResponse("/gestao/primeiro-acesso", status_code=303)
     return templates.TemplateResponse(request, "gestao/login.html", {"erro": erro})
 
 
@@ -122,6 +179,7 @@ def painel(request: Request, db: Session = Depends(get_db), gestor: Usuario = De
     # A previsão da fila só é exibida quando amanhã AINDA não está fechado; com o
     # mês fechado (o normal) não se roda o motor à toa.
     amanha_serve = painel_service.servico_do_dia(db, amanha)
+    passos_inst = instalacao.passos(db)
     return templates.TemplateResponse(request, "gestao/home.html", {
         "gestor": gestor, "contagens": contagens, "auditoria": ultimas,
         "hoje": hoje, "amanha": amanha,
@@ -135,6 +193,33 @@ def painel(request: Request, db: Session = Depends(get_db), gestor: Usuario = De
         "equidade": painel_service.equidade(db, date(hoje.year, 1, 1), hoje),
         "feriados_proximos": painel_service.dias_vermelhos_proximos(db, hoje),
         "dias_semana": DIAS_SEMANA,
+        # Faixa da instalação, só enquanto houver passo OBRIGATÓRIO pendente:
+        # numa instalação em uso ela some, porque aviso permanente vira
+        # paisagem. Quem decide é o serviço, não uma contagem repetida aqui.
+        "instalacao": None if instalacao.concluida(passos_inst) else {
+            "pendentes": instalacao.pendentes(passos_inst),
+            "proximo": instalacao.proximo(passos_inst),
+            "total": len(passos_inst),
+            "feitos": sum(1 for p in passos_inst if p.feito),
+        },
+    })
+
+
+@router.get("/instalacao", response_class=HTMLResponse)
+def assistente(request: Request, db: Session = Depends(get_db),
+               gestor: Usuario = Depends(gestor_web)):
+    """Assistente de primeira execução: a ordem certa de instalar numa OM nova.
+
+    As telas para fazer tudo isso já existiam; o que faltava era alguém dizer
+    por onde começar. A ordem é a do manual, e cada passo depende do anterior.
+    """
+    lista = instalacao.passos(db)
+    return templates.TemplateResponse(request, "gestao/instalacao.html", {
+        "gestor": gestor, "passos": lista,
+        "pendentes": instalacao.pendentes(lista),
+        "concluida": instalacao.concluida(lista),
+        "proximo": instalacao.proximo(lista),
+        "feitos": sum(1 for p in lista if p.feito),
     })
 
 

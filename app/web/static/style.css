@@ -548,8 +548,44 @@ button.perigo:hover { background:var(--vermelho-fundo); border-color:var(--verme
 .importar input[type=file] { padding:6px 0; border:none; font-size:13px;
             font-family:inherit; color:var(--tinta-2); }
 
+/* --- assistente de instalação ----------------------------------------------
+   Lista numerada de passos: o número vira ✓ quando o passo está feito, e o
+   feito perde peso (fundo e texto mais fracos) para que o olho caia no que
+   falta. A cor não é a única marca — o ✓ e o rótulo do botão também mudam. */
+.passos { list-style:none; margin:18px 0 0; padding:0; counter-reset:passo; }
+.passo { display:flex; align-items:flex-start; gap:16px; padding:16px 18px; margin-bottom:10px;
+         background:var(--papel); border:1px solid var(--borda); border-radius:var(--raio);
+         box-shadow:var(--sombra); }
+.passo .marca { flex:0 0 30px; height:30px; border-radius:50%; display:inline-flex;
+                align-items:center; justify-content:center; font-weight:700; font-size:14px;
+                font-family:var(--mono); background:var(--cinza); color:var(--tinta-2); }
+.passo.pendente .marca { background:var(--azul); color:#fff; }
+.passo.feito .marca { background:var(--verde-fundo); color:var(--verde);
+                      border:1px solid var(--verde-borda); font-family:inherit; }
+.passo .conteudo { flex:1 1 auto; min-width:0; }
+.passo h3 { margin:0 0 4px; font-size:15px; color:var(--azul); }
+.passo.feito h3 { color:var(--tinta-2); }
+.passo .porque { margin:0; font-size:13px; color:var(--tinta-2); line-height:1.55; max-width:70ch; }
+.passo .estado { margin:6px 0 0; font-size:12px; color:var(--tinta-3); font-family:var(--mono); }
+.passo .tag { font-size:10.5px; vertical-align:middle; }
+.passo > .botao { flex:0 0 auto; align-self:center; white-space:nowrap; }
+
+/* Faixa da instalação: some quando os passos obrigatórios acabam. Usa o AZUL
+   institucional, não o vermelho de alerta — instalar não é defeito nem
+   urgência; é o caminho normal de quem acabou de subir o sistema. Vermelho
+   aqui gastaria o sinal que a tela usa para "alguém vai deixar de entrar de
+   serviço". */
+.situacao.instalando { background:var(--cinza-2); border-color:var(--borda-forte); }
+.situacao.instalando h3 { color:var(--azul); }
+.situacao.instalando h3::before { content:"\2192"; background:var(--azul); }
+.situacao.instalando p { color:var(--tinta-2); }
+.situacao.instalando .botao { margin-top:6px; }
+
 /* --- telas estreitas -------------------------------------------------------- */
 @media (max-width:760px) {
+  .passo { flex-wrap:wrap; }
+  .passo > .botao { width:100%; text-align:center; }
+
   main { padding:0 14px; margin-top:16px; }
   .grade2 { grid-template-columns:1fr; }
   .topo { padding:10px 14px; }

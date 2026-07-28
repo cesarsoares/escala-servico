@@ -93,6 +93,8 @@ AVISOS = {
     "override-removido": "Cor forçada removida — o dia volta à cor natural.",
     "permuta-criada": "Permuta registrada. A folga continua com quem estava escalado.",
     "permuta-cancelada": "Permuta cancelada — o escalado volta a figurar.",
+    "primeiro-gestor": "Acesso criado e sessão iniciada. Anote a senha: "
+                       "não há recuperação por e-mail.",
     # Configurações (regra 13.2 — uma instalação por OM)
     "configuracao-salva": "Configuração salva.",
     "om-criada": "OM cadastrada.",

@@ -788,6 +788,45 @@ Os dois têm os 285 militares reais, mas **não** o mesmo número de serviços.
 `alembic current` dizendo `head` enquanto `dados/escala.sqlite3` segue na
 revisão antiga não é bug: são bancos diferentes.
 
+## Instalar numa OM sem ajuda: 3 atritos removidos (feito — 2026-07-27)
+
+Pedido do usuário: "fazer o máximo para facilitar a vida de quem vai usar".
+Testes em `tests/test_instalacao.py`; lógica em `app/services/instalacao.py`.
+
+1. **Primeiro acesso pela tela** (`/gestao/primeiro-acesso`). Antes, banco sem
+   gestor = nenhum jeito de entrar a não ser `docker compose exec app python -m
+   app.seeds.usuario` — parede na porta para quem só recebeu a imagem. Agora
+   `/gestao/login` desvia para lá enquanto `instalacao.sem_gestor(db)`, cria o
+   gestor com `configuracao.criar_gestor` (mesma validação da tela de gestores),
+   **já loga** e cai no assistente.
+   - A checagem de "não existe gestor" é refeita **no POST**, não só no GET:
+     senão a rota vira cadastro aberto de gestores.
+   - A criação é auditada com o `usuario_id` do próprio criado — não há outro a
+     quem atribuir, e o ato não pode ficar sem registro (regra 11).
+   - **O CLI continua**: é o socorro para senha perdida, que a tela (fechada
+     assim que há gestor) não resolve.
+2. **Chave de sessão gerada no primeiro boot** (`config.chave_persistente`).
+   Havia um default embutido — e **o código está publicado no GitHub**: quem
+   lesse o repositório forjava o cookie de sessão de qualquer OM que não
+   tivesse trocado o valor. Agora, sem `SECRET_KEY` no ambiente, gera-se uma
+   aleatória e guarda-se em `secret_key_file` (no container, `/dados/secret_key`
+   — dentro do volume, para sobreviver a `docker compose up`). Sem onde gravar,
+   a chave vale para o processo: o sistema sobe, as sessões caem no restart,
+   mas **nunca** com chave adivinhável. `SECRET_KEY` no ambiente tem precedência.
+3. **Assistente de instalação** (`/gestao/instalacao`). As telas já existiam; o
+   que faltava era dizer por onde começar. Sete passos na ordem em que dependem
+   uns dos outros (a do manual e a do hub de Configurações).
+   - **`concluida()` ignora os opcionais** (histórico e 2º gestor): uma OM sem
+     passado em planilha nunca teria a instalação "completa" e o aviso do painel
+     viraria ruído permanente.
+   - Escala só conta como pronta com **posto E participante ativo** — sem um dos
+     dois o mês fecha vazio (regra 7.8).
+   - A faixa no painel usa `.situacao.instalando`, **azul institucional e não o
+     vermelho de alerta**: instalar não é defeito, e gastar o vermelho aqui
+     enfraquece o sinal de "alguém vai deixar de entrar de serviço".
+   - **Não entrou na barra de navegação** (ela já estourou duas vezes): chega-se
+     pelo painel, pelo hub de Configurações e pelo manual.
+
 ## Próximos passos sugeridos
 
 1. **WeasyPrint gerando o PDF pelo servidor** — já está instalado na imagem
@@ -797,9 +836,7 @@ revisão antiga não é bug: são bancos diferentes.
 2. Validar com o Brigada as mudanças de regra em aberto: a remoção da previsão
    (afeta a regra 10), o override para **preta** (generaliza a 5.3) e a
    **participação restrita a uma cor (3.3.1)**, escrita em 27/07.
-3. Assistente de primeira execução: hoje Configurações + importação já dão conta
-   de instalar numa OM nova, mas o caminho precisa ser descoberto pelo gestor.
-4. Fase 2: módulo de representação.
+3. Fase 2: módulo de representação.
 
 ## ⚠️ O container não fica de pé nesta máquina (Windows/WSL)
 

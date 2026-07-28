@@ -16,11 +16,13 @@ services:
     environment:
       # 4 barras = caminho absoluto dentro do container
       DATABASE_URL: sqlite:////dados/escala.sqlite3
-      # Assina o token de sessão do gestor. HS256 exige >= 32 bytes (abaixo
-      # disso o pyjwt emite InsecureKeyLengthWarning). Em produção, defina a
-      # variável SECRET_KEY no ambiente ou num .env ao lado deste arquivo:
-      #     python -c "import secrets; print(secrets.token_urlsafe(48))"
-      SECRET_KEY: ${SECRET_KEY:-troque-esta-chave-em-producao-por-uma-de-verdade}
+      # Assina o cookie de sessão do gestor. Deixe em branco: no primeiro boot
+      # o sistema gera uma chave aleatória e a guarda em /dados/secret_key (o
+      # volume), então ela sobrevive a reinícios e NENHUMA instalação roda com
+      # chave conhecida — o código é público. Definir SECRET_KEY no ambiente
+      # continua valendo e tem precedência.
+      SECRET_KEY: ${SECRET_KEY:-}
+      SECRET_KEY_FILE: /dados/secret_key
       # Fuso da OM. A auditoria é gravada em UTC e a tela converte para o fuso
       # do servidor (regra 11: "quem mexeu e quando" tem de bater com o relógio
       # da parede). Sem isto o container roda em UTC e mostra 3h adiantado.

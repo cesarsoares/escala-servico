@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Primeiro acesso — Gestão{% endblock %}
+{% block content %}
+<div class="login-box">
+  <h2>Primeiro acesso</h2>
+  <p class="sub">Esta instalação ainda não tem nenhum gestor. Crie o primeiro
+    acesso — normalmente o do sargenteante que vai operar a escala (regra 11).</p>
+  {% if erro %}<p class="erro">{{ erro }}</p>{% endif %}
+  {# Mesmo cuidado do login: celular e navegador capitalizam a primeira letra
+     por conta própria e transformariam 'brigada' em 'Brigada'. #}
+  <form method="post" action="/gestao/primeiro-acesso">
+    <label>Login<input name="login" value="{{ v.login or '' }}" autofocus required
+                       autocapitalize="none" autocorrect="off" spellcheck="false"
+                       autocomplete="username" placeholder="ex.: brigada"></label>
+    <label>Nome<input name="nome" value="{{ v.nome or '' }}" required
+                      autocomplete="name" placeholder="ex.: Sgt Brigada"></label>
+    <label>Senha<input name="senha" type="password" required
+                       minlength="{{ senha_minima }}" autocomplete="new-password"></label>
+    <label>Repita a senha<input name="senha2" type="password" required
+                                minlength="{{ senha_minima }}" autocomplete="new-password"></label>
+    <p class="sub">Ao menos {{ senha_minima }} caracteres. Anote-a: não há
+      recuperação por e-mail — perdida, só a seção de TI recria o acesso pela
+      linha de comando.</p>
+    <button type="submit">Criar acesso e começar</button>
+  </form>
+  <p class="sub"><a href="/">← voltar à consulta</a></p>
+</div>
+{% endblock %}

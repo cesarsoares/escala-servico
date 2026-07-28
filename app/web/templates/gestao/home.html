@@ -7,6 +7,18 @@
   <span class="sub">{{ dias_semana[hoje.weekday()] }}, {{ hoje.strftime('%d/%m/%Y') }}</span>
 </div>
 
+{# A instalação vem ANTES de tudo, e só enquanto falta passo obrigatório: numa
+   OM que ainda não cadastrou efetivo nem escala, "ninguém escalado hoje" é
+   consequência, não pendência — apontar o próximo passo é o que ajuda. #}
+{% if instalacao %}
+<section class="situacao instalando">
+  <h3>Instalação em andamento</h3>
+  <p>{{ instalacao.feitos }} de {{ instalacao.total }} passos concluídos.
+     Próximo: <strong>{{ instalacao.proximo.titulo }}</strong>.</p>
+  <p><a class="botao" href="/gestao/instalacao">Continuar a instalação</a></p>
+</section>
+{% endif %}
+
 {# ORDEM DELIBERADA: o que faz alguém deixar de entrar de serviço vem primeiro;
    contagem bonita vem por último. E o urgente não pode ter o MESMO peso visual
    do contexto — daí esta faixa, que resume em uma olhada se há o que fazer. #}

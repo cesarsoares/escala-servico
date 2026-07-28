@@ -13,7 +13,22 @@ O sistema tem duas metades:
 
 ## 1. Instalando numa OM nova
 
-Faça nesta ordem. Cada passo depende do anterior.
+Faça nesta ordem. Cada passo depende do anterior — e **o sistema conduz essa
+sequência sozinho**: em **Gestão → Instalação** (o painel também aponta para lá
+enquanto houver passo pendente) cada item mostra o que já está feito, o que
+falta e o botão que leva à tela certa.
+
+### 1.0 O primeiro acesso
+
+Numa instalação recém-subida **não existe nenhum gestor**, e a gestão exige
+login. Ao abrir `/gestao`, o sistema leva à tela de **primeiro acesso**: informe
+um login (ex.: `brigada`), o nome e uma senha de ao menos 8 caracteres. Você
+entra já logado, e a tela **se fecha permanentemente** — daí em diante, novos
+gestores são cadastrados em **Configurações → Gestores**.
+
+> **Anote a senha.** Não há recuperação por e-mail. Perdida a senha do único
+> gestor, só a seção de TI recria o acesso, por linha de comando no servidor.
+> É por isso que cadastrar um **segundo gestor** é um dos passos da instalação.
 
 ### 1.1 Dizer qual é a sua OM
 

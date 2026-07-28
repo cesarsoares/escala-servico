@@ -1,0 +1,54 @@
+{% extends "gestao/base_gestao.html" %}
+{% block title %}Instalação — Gestão{% endblock %}
+{% block estilos %}<link rel="stylesheet" href="/static/graficos.css">{% endblock %}
+{% block gestao %}
+<div class="linha-topo">
+  <h2>Instalação</h2>
+  <span class="sub">{{ feitos }} de {{ passos|length }} passos</span>
+</div>
+
+{% if concluida %}
+<section class="situacao calma">
+  <h3>Instalação concluída</h3>
+  <p>O essencial está no lugar: a OM está identificada, há efetivo cadastrado e
+     ao menos uma escala pronta para rodar. Daqui em diante o dia a dia é pelo
+     <a href="/gestao">painel</a>.</p>
+</section>
+{% else %}
+<section class="situacao instalando">
+  <h3>Próximo passo: {{ proximo.titulo }}</h3>
+  <p>{{ proximo.porque }}</p>
+  <p><a class="botao" href="{{ proximo.caminho }}">{{ proximo.rotulo_acao }}</a></p>
+</section>
+{% endif %}
+
+{# A barra é DADO: a fração de passos feitos, na mesma linguagem das outras
+   telas (verde = pronto, âmbar = falta). #}
+{% set pct = (feitos * 100 / passos|length)|round|int %}
+<div class="barra" role="img"
+     aria-label="{{ feitos }} de {{ passos|length }} passos concluídos">
+  {% if pct %}<span class="seg-ok ini" style="width:{{ pct }}%">{{ pct }}%</span>{% endif %}
+  {% if pct < 100 %}<span class="seg-falta fim" style="width:{{ 100 - pct }}%"></span>{% endif %}
+</div>
+
+<p class="sub">A ordem abaixo não é sugestão: cada passo depende do anterior —
+  não há como marcar a OM da casa antes de cadastrá-la, nem escalar antes de
+  ter efetivo, nem importar histórico antes de existir a escala que recebe os
+  serviços. É a mesma sequência do <a href="/manual">manual</a>.</p>
+
+<ol class="passos">
+  {% for p in passos %}
+  <li class="passo {{ 'feito' if p.feito else 'pendente' }}">
+    <span class="marca" aria-hidden="true">{{ '✓' if p.feito else loop.index }}</span>
+    <div class="conteudo">
+      <h3>{{ p.titulo }}
+        {%- if p.opcional %} <span class="tag">opcional</span>{% endif %}</h3>
+      <p class="porque">{{ p.porque }}</p>
+      {% if p.estado %}<p class="estado">{{ p.estado }}</p>{% endif %}
+    </div>
+    <a class="botao {{ 'secundario' if p.feito }}" href="{{ p.caminho }}">
+      {{ 'Rever' if p.feito else p.rotulo_acao }}</a>
+  </li>
+  {% endfor %}
+</ol>
+{% endblock %}

@@ -48,13 +48,24 @@ subir o servidor:
 
 ```bash
 docker compose up --build
-docker compose exec app python -m app.seeds.usuario brigada "Sgt Brigada"  # 1º gestor
 ```
 
-Em produção, defina a chave de sessão antes de subir (>= 32 bytes):
+Pronto — **não há mais nada a configurar**. Abra http://localhost:8000/gestao:
+como o banco ainda não tem gestor, o sistema leva à tela de **primeiro acesso**,
+onde se cria o login do sargenteante; em seguida o **assistente de instalação**
+conduz a sequência (OM → graduações → OMs de origem → efetivo → escalas →
+histórico). A tela de primeiro acesso se fecha sozinha assim que existe um
+gestor.
+
+A chave que assina a sessão é **gerada no primeiro boot** e guardada em
+`dados/secret_key`, junto do banco: nenhuma instalação roda com chave conhecida
+e ninguém precisa lembrar de defini-la. Para controlar o valor (por exemplo,
+compartilhar a sessão entre instâncias), basta passar `SECRET_KEY` no ambiente.
+
+Se a senha do único gestor se perder, o acesso se recria pela linha de comando:
 
 ```bash
-SECRET_KEY=$(python -c "import secrets; print(secrets.token_urlsafe(48))") docker compose up -d
+docker compose exec app python -m app.seeds.usuario brigada "Sgt Brigada"
 ```
 
 Sem Docker (usa SQLite por padrão, sem configurar nada):
