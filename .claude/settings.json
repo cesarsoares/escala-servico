@@ -41,7 +41,21 @@
       "Bash(python -m pytest tests/test_participacao_por_cor.py tests/test_api_consulta.py tests/test_impressao.py tests/test_ajustes_0726.py -q)",
       "Bash(python -m pytest tests/test_participacao_por_cor.py tests/test_api_consulta.py -q)",
       "Bash(git merge *)",
-      "Bash(git commit -m 'Permissões aprovadas nesta sessão \\(settings.json do projeto\\) *)"
+      "Bash(git commit -m 'Permissões aprovadas nesta sessão \\(settings.json do projeto\\) *)",
+      "Bash(rm estado-em-26-07-tarde.md)",
+      "PowerShell(wsl -e bash $script)",
+      "PowerShell($script = \"/mnt/c/Users/cesar/AppData/Local/Temp/claude/c--Users-cesar-OneDrive-Documentos-projetos-escala/1709729f-1cf5-4617-8d41-862e744a2d2a/scratchpad/atualizar_container.sh\")",
+      "Bash(gh --version)",
+      "Bash(gh auth *)",
+      "Bash(git config *)",
+      "PowerShell($gh = Get-Command gh -ErrorAction SilentlyContinue; if \\($gh\\) { $gh.Source; gh auth status } else { \"gh NAO instalado\" }; \"--- credential helper ---\"; git config --global credential.helper)",
+      "PowerShell(\"system: \" + \\(git config --system credential.helper\\); \"global: \" + \\(git config --global credential.helper\\); \"--- manager instalado? ---\"; Test-Path \"C:\\\\Program Files\\\\Git\\\\mingw64\\\\bin\\\\git-credential-manager.exe\")",
+      "Bash(git remote *)",
+      "PowerShell(git push -u origin master)",
+      "Bash(git ls-remote *)",
+      "Bash(git ls-tree *)",
+      "Bash(grep -iE \"sqlite|xlsx|\\\\.ods$|fichas_exemplo|^\\\\.env$|settings.local\")",
+      "Bash(git push *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\cesar\\AppData\\Local\\Temp\\claude\\c--Users-cesar-OneDrive-Documentos-projetos-escala\\9fbfa581-3529-44c1-8afc-0ec33252d2e7\\scratchpad"
