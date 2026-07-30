@@ -1,0 +1,149 @@
+{% extends "gestao/base_gestao.html" %}
+{% block title %}Lançar serviço à mão — Gestão{% endblock %}
+{% block gestao %}
+<h2>Serviços lançados à mão</h2>
+<p class="sub">Para registrar o serviço que aconteceu <strong>fora do sistema</strong>
+(a escala manuseada na emergência, o dia trocado no papel) e para corrigir o que
+está gravado errado — inclusive a <strong>data</strong>. Não há campo de "último
+serviço": a fila (regra 6.2) e a folga (regra 7.4) são calculadas a partir desta
+tabela, então o que se lança aqui já entra nas duas.</p>
+<p class="sub">Para fechar o mês normalmente use <a href="/gestao/escalar">Escalar
+período</a> — é o motor que aplica rotação, folga e antiguidade.</p>
+
+{% if erro %}<p class="erro" role="alert">{{ erro }}</p>{% endif %}
+
+{% if not escalas %}
+  <p class="sub">Nenhuma escala cadastrada.</p>
+{% else %}
+<nav class="escalas">
+  {% for e in escalas %}
+    <a href="/gestao/servicos?escala_id={{ e.id }}&ano={{ ano }}&mes={{ mes }}"
+       class="chip {{ 'ativo' if e.id == escala.id }}">{{ e.nome }}{% if not e.ativa %}
+       <span class="fraco">(extinta)</span>{% endif %}</a>
+  {% endfor %}
+</nav>
+
+{# --- resultado da conferência (etapa 1) --- #}
+{% if analise %}
+<div class="resultado">
+  <h3>Conferência</h3>
+  {% if analise.dia %}
+  <p>{{ analise.escala_nome }} — <strong>{{ analise.dia.strftime('%d/%m/%Y') }}</strong>
+     <span class="fraco">{{ dias_semana[analise.dia.weekday()] }}</span>
+     <span class="tag cor-{{ analise.cor.value }}">{{ analise.cor.value }}</span>
+     · {{ analise.posto_rotulo }} · <strong>{{ analise.militar_nome }}</strong></p>
+  <p class="sub">Serviço de {{ analise.inicio_dt.strftime('%d/%m %H:%M') }}
+     a {{ analise.termino_dt.strftime('%d/%m %H:%M') }}. A cor vem do calendário
+     (regra 5), não de quem digita.</p>
+  {% endif %}
+
+  {% if analise.erros %}
+    <p class="erro" role="alert"><strong>Não dá para gravar:</strong></p>
+    <ul class="erro">{% for m in analise.erros %}<li>{{ m }}</li>{% endfor %}</ul>
+  {% elif analise.avisos %}
+    <p class="erro" role="alert"><strong>Confira antes de gravar:</strong></p>
+    <ul class="erro">{% for m in analise.avisos %}<li>{{ m }}</li>{% endfor %}</ul>
+    <p class="sub">Nada disso impede o registro — o que já aconteceu, aconteceu.
+    Confirme se é mesmo o caso.</p>
+    <form method="post"
+          action="{{ '/gestao/servicos/' ~ editando.id ~ '/alterar' if editando else '/gestao/servicos' }}">
+      <input type="hidden" name="confirmado" value="1">
+      <input type="hidden" name="escala_id" value="{{ escala.id }}">
+      <input type="hidden" name="posto_id" value="{{ form.posto_id }}">
+      <input type="hidden" name="dia" value="{{ form.dia }}">
+      <input type="hidden" name="militar_id" value="{{ form.militar_id }}">
+      <input type="hidden" name="ano" value="{{ ano }}">
+      <input type="hidden" name="mes" value="{{ mes }}">
+      <button class="perigo" type="submit">Gravar assim mesmo</button>
+    </form>
+  {% endif %}
+</div>
+{% endif %}
+
+{# --- formulário: lançar novo, ou editar a linha aberta --- #}
+<h3>{{ 'Corrigir o serviço' if editando else 'Lançar um serviço' }}</h3>
+<form method="post" class="formulario"
+      action="{{ '/gestao/servicos/' ~ editando.id ~ '/alterar' if editando else '/gestao/servicos' }}">
+  <input type="hidden" name="escala_id" value="{{ escala.id }}">
+  <input type="hidden" name="ano" value="{{ ano }}">
+  <input type="hidden" name="mes" value="{{ mes }}">
+  <label>Dia
+    <input type="date" name="dia" required value="{{ form.dia or '' }}"></label>
+  <label>Posto
+    <select name="posto_id" required>
+      {% for p in postos %}
+        <option value="{{ p.id }}" {{ 'selected' if form.posto_id == p.id }}>
+          {{ p.rotulo or ('Posto ' ~ p.ordem) }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Militar
+    <select name="militar_id" required>
+      <option value="">—</option>
+      {% for sigla, gente in militares %}
+        <optgroup label="{{ sigla }}">
+        {% for m in gente %}
+          <option value="{{ m.id }}" {{ 'selected' if form.militar_id == m.id }}>
+            {{ m.nome_guerra }}</option>
+        {% endfor %}
+        </optgroup>
+      {% endfor %}
+    </select>
+  </label>
+  <button type="submit">{{ 'Salvar correção' if editando else 'Conferir e lançar' }}</button>
+  {% if editando %}
+    <p class="sub"><a href="/gestao/servicos?escala_id={{ escala.id }}&ano={{ ano }}&mes={{ mes }}">cancelar
+      a correção</a></p>
+  {% endif %}
+</form>
+<p class="sub">A lista de militares traz o <strong>efetivo inteiro</strong>, não só os
+participantes: o que aconteceu pode ter envolvido quem hoje não concorre nesta
+escala. Isso vira aviso, não recusa.</p>
+
+{# --- o mês --- #}
+<div class="mes-nav">
+  {% set ant = (ano - 1, 12) if mes == 1 else (ano, mes - 1) %}
+  {% set prox = (ano + 1, 1) if mes == 12 else (ano, mes + 1) %}
+  <a class="seta" href="/gestao/servicos?escala_id={{ escala.id }}&ano={{ ant[0] }}&mes={{ ant[1] }}">&larr;</a>
+  <h3>{{ mes_nome|capitalize }} / {{ ano }}</h3>
+  <a class="seta" href="/gestao/servicos?escala_id={{ escala.id }}&ano={{ prox[0] }}&mes={{ prox[1] }}">&rarr;</a>
+</div>
+
+{% if not servicos %}
+  <p class="sub">Nenhum serviço gravado neste mês para esta escala.</p>
+{% else %}
+<table class="tabela">
+  <thead><tr><th>Dia</th><th>Cor</th><th>Posto</th><th>Escalado</th><th></th></tr></thead>
+  <tbody>
+  {% for s in servicos %}
+    <tr class="{{ 'permutado' if s.id in permutados }}">
+      <td>{{ s.dia.strftime('%d/%m') }}
+        <span class="fraco">{{ dias_semana[s.dia.weekday()] }}</span></td>
+      <td><span class="tag cor-{{ s.cor.value }}">{{ s.cor.value }}</span></td>
+      <td>{{ rotulo_posto.get(s.posto_id, '—') }}</td>
+      <td>{{ s.militar.posto_graduacao.sigla }} {{ s.militar.nome_guerra }}</td>
+      <td>
+        {% if s.id in permutados %}
+          {# A permuta aponta para ESTE dia e ESTE escalado (regra 9): mexer na
+             linha por baixo a tornaria mentirosa. #}
+          <span class="fraco">tem permuta —
+            <a href="/gestao/permutas/servico/{{ s.id }}">ver</a></span>
+        {% else %}
+          <a class="botao mini secundario"
+             href="/gestao/servicos?editar={{ s.id }}">corrigir</a>
+          <form method="post" style="display:inline"
+                action="/gestao/servicos/{{ s.id }}/remover"
+                onsubmit="return confirm('Apagar este serviço? A folga e a fila deste militar mudam.')">
+            <input type="hidden" name="ano" value="{{ ano }}">
+            <input type="hidden" name="mes" value="{{ mes }}">
+            <button class="mini perigo" type="submit">remover</button>
+          </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endif %}
+{% endblock %}

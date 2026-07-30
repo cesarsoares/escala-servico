@@ -100,8 +100,12 @@
 {% if alertas.conflitos %}
 <p class="erro"><strong>{{ alertas.conflitos|length }}</strong> serviço(s) com militar
   <strong>impedido</strong> no dia. Isso acontece quando a dispensa é lançada depois
-  de fechar o mês: o que está gravado envelheceu. Re-escale o período marcando
-  <em>regravar</em> (regra 7.5).</p>
+  de fechar o mês: o que está gravado envelheceu (regra 7.5).</p>
+<p class="sub">Em <a href="/gestao/conflitos">Conflitos</a> troca-se
+  <strong>só o dia</strong> em questão, e o resto do mês continua como foi publicado.
+  Refazer a rotação inteira do período continua possível em
+  <a href="/gestao/escalar">Escalar</a> com <em>regravar</em> — mas isso muda todos os
+  dias e apaga as permutas do período.</p>
 <table class="tabela">
   <thead><tr><th>Dia</th><th>Escala</th><th>Escalado</th><th>Impedimento</th><th></th></tr></thead>
   <tbody>
@@ -111,7 +115,7 @@
       <td>{{ c.escala }}</td>
       <td>{{ c.militar }}</td>
       <td class="fraco">{{ c.impedimento[0].strftime('%d/%m') }} a {{ c.impedimento[1].strftime('%d/%m') }}</td>
-      <td><a class="botao mini secundario" href="/gestao/escalar">regravar</a></td>
+      <td><a class="botao mini secundario" href="/gestao/conflitos">resolver</a></td>
     </tr>
   {% endfor %}
   </tbody>

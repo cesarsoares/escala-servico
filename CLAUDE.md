@@ -102,6 +102,9 @@ app/
     publicacao.py   Monta o documento da escala do mês (regra 12).
     configuracao.py Identificação da OM, referências editáveis e gestores.
     importacao_csv.py Carga do histórico de serviços (conferir -> confirmar).
+    conflitos.py    Serviço gravado × impedimento lançado depois (regra 7.5).
+    lancamento.py   Lançamento/correção manual de serviço (fato consumado).
+    recuperacao.py  Código de recuperação de senha, gravado no servidor.
   api/        <- Rotas HTTP.
   web/        <- Telas (Jinja + estáticos): consulta aberta + /gestao + /manual.
                  static/menu.js é o ÚNICO JavaScript, e é nosso (cortina de
@@ -1029,6 +1032,109 @@ de primeiro acesso são 600.
 dependia do `core.autocrlf` de quem clona — e agora quem clona é uma OM
 qualquer. `#!/bin/sh\r` vira "bad interpreter", que é a falha mais confusa que
 existe; o `sed -i 's/\r$//'` do Dockerfile era o curativo, isto ataca a causa.
+
+## As 3 demandas do Brigada (feito — 2026-07-30)
+
+Anotadas pelo usuário no `notas.txt`. **656 testes passando**
+(`test_conflitos.py`, `test_conflitos_web.py`, `test_recuperacao_senha.py`,
+`test_lancamento.py`).
+
+### 1. "Mesmo colocado impedimento o militar ainda é escalado no período"
+
+**O motor não erra** — provado antes de mexer em nada, com 5 cenários ponta a
+ponta (impedimento antes de escalar, parcial, de um dia só). O que produz a
+queixa é outro: a dispensa chega DEPOIS do mês fechado, e `gravar_dia` é
+idempotente (posto que já tem serviço no dia é pulado), então re-escalar grava
+zero. A única saída era **regravar**, que apaga o período e refaz — muda quem
+serve em TODOS os dias e leva as permutas por CASCADE. Numa escala já publicada
+em boletim isso é impublicável, e é por isso que ele não usava.
+
+`app/services/conflitos.py` + `/gestao/conflitos` resolvem **dia a dia**:
+
+- `conflitos()` cruza `servico` × `impedimento` e propõe o próximo da fila;
+- `substituir()` **ALTERA** a linha (não apaga e recria): o `servico.id` é o que
+  a permuta referencia e o que a auditoria já citou, e a vaga nunca fica vazia
+  no meio do caminho;
+- `descobrir()` apaga, para quando não há quem entre — o painel passa a acusar
+  (7.8), que é melhor que o documento anunciar quem está de férias.
+
+⚠️ **A guarda que só existe aqui: o FUTURO já está gravado.** Na escalação
+cronológica ninguém precisa olhar para frente — o amanhã ainda não foi escrito.
+Na substituição retroativa, pôr alguém na véspera do serviço que ele já tem fere
+a folga DELE. `_fere_servico_futuro` varre os serviços seguintes do candidato nas
+escalas concorrentes, aplicando o piso **da escala de destino de cada um**
+(7.4.2). Sem isso a troca conserta um dia e quebra outro, em silêncio.
+
+- **Serviço com permuta não é trocável**: quem cobre está cobrindo por AQUELA
+  pessoa (regra 9); trocar por baixo tornaria o registro mentiroso. A tela manda
+  para a tela de permutas.
+- **A substituição pontual não recalcula os dias seguintes**, e isso está dito no
+  docstring: a rotação fica levemente fora do ciclo que o motor produziria do
+  zero. É o preço de manter publicável o que já foi publicado — e é o que o
+  Brigada faz à mão.
+- Gravar impedimento que alcança dia já escalado **desvia para a tela de
+  conflitos**, com o período filtrado. Antes dizia "ok" em verde e o conflito
+  ficava mês adentro — o defeito relatado.
+- ⚠️ **O motivo da recusa NÃO viaja em `?erro=`**: é texto livre do serviço, e a
+  URL passaria a escrever o que quisesse na tela de gestão (mesma razão de as
+  confirmações serem chaves em `AVISOS`). A falha re-renderiza a lista com 400,
+  e os filtros vêm da querystring da própria `action` do formulário.
+
+### 2. Alterar a data do último serviço
+
+**Não virou campo, e não deve virar.** A fila (6.2) e a folga (7.4) são
+DERIVADAS de `servico` por `mapeamento`; uma coluna de "última data" seria um
+segundo lugar guardando a mesma verdade, e dois lugares divergem.
+`app/services/lancamento.py` + `/gestao/servicos` deixam o gestor escrever na
+própria tabela: lançar o serviço que aconteceu fora do sistema, corrigir data /
+escalado / posto, remover. A fila e a folga passam a considerá-lo sozinhas.
+
+- **Postura de fato consumado, como na importação de CSV.** Duas listas:
+  `erros` impedem (vaga ocupada no dia, dobra com outro serviço, entidade
+  inexistente); `avisos` deixam passar (folga curta, não é participante, isento,
+  cor em que não concorre, impedido, data no futuro). Conferir → confirmar na
+  MESMA rota, pelo campo `confirmado` — e **confirmar não atropela erro**.
+- **A cor sai do calendário**, nunca de quem digita (regra 5), e **mudar a data
+  recalcula cor e janela**: um serviço movido de sexta para sábado é vermelho.
+  Guardar a cor antiga poria o militar na fila errada.
+- `ignorar_servico_id` na análise: sem ele, editar só o militar faria a própria
+  linha acusar "vaga já ocupada".
+- O `<select>` traz o **efetivo inteiro**, não só os participantes — o que
+  aconteceu pode ter envolvido quem hoje não concorre (vira aviso).
+- ⚠️ **`tests/test_lancamento.py` calcula as datas a partir de `date.today()`**
+  (`_segunda_passada`). Data cravada faria o aviso "data no futuro" aparecer ou
+  sumir conforme o dia em que a suíte roda.
+
+### 3. Senha esquecida
+
+Metade já existia e ninguém sabia: **gestor logado troca a senha de outro**
+(`configuracao.trocar_senha`) — é o que cobre a OM com dois gestores, e a razão
+de o segundo ser passo da instalação. O buraco era o **gestor único**.
+
+`app/services/recuperacao.py` + "Esqueci a senha" no login repetem o padrão do
+primeiro acesso: a prova de autoridade é **acesso ao servidor**. O código vai
+para `dados/recuperar-senha.txt` e **NUNCA aparece na tela** (há teste) — exibi-lo
+anularia a trava inteira.
+
+- **Vence** (`recuperacao_validade_min`, 60 min) e **morre ao ser usado**.
+  Diferente da senha de primeiro acesso, que morre sozinha quando nasce o
+  gestor, este não teria fim natural nenhum: arquivo esquecido = segunda porta
+  permanente.
+- **Pedir de novo dentro da validade devolve o MESMO código.** Sem isso, qualquer
+  um na rede recarregando a página invalidaria o código que a TI acabou de ler ao
+  telefone — negação de serviço contra o dono da máquina.
+- `secrets.compare_digest`, arquivo corrompido tratado como ausente (estourar
+  deixaria o dono sem caminho), e **errar a senha não gasta o código**.
+- **A senha digitada não volta no HTML** em caso de erro (cache e histórico do
+  navegador); só o login, que não é segredo.
+- Reativa o gestor desativado por engano: quem tem o código já provou mais
+  acesso do que o gestor comum tem.
+
+### Nenhuma das três ganhou aba na barra de navegação
+
+Ela já estourou duas vezes (ver seção dos ajustes de 26/07). Chega-se por:
+painel → Conflitos; Escalar → Conflitos e Serviços lançados à mão; tela de
+impedimentos → Conflitos; login → Esqueci a senha.
 
 ## Próximos passos sugeridos
 

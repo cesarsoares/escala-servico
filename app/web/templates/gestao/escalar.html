@@ -50,9 +50,15 @@ o passado.</p>
   <label>Fim<input type="date" name="fim" required></label>
   <label class="check">
     <input type="checkbox" name="regravar" value="1">
-    <span>regravar (apaga o período e refaz — use após lançar impedimentos;
-      <strong>as permutas do período são perdidas</strong> e precisam ser refeitas)</span>
+    <span>regravar (apaga o período e refaz do zero — muda quem serve em
+      <strong>todos</strong> os dias e <strong>as permutas do período são
+      perdidas</strong>)</span>
   </label>
   <button type="submit">Escalar</button>
 </form>
+
+<p class="sub">Para um dia só, sem refazer o período:
+<a href="/gestao/conflitos">Conflitos</a> troca o escalado que está impedido, e
+<a href="/gestao/servicos">Serviços lançados à mão</a> registra o que aconteceu
+fora do sistema ou corrige a data de um serviço gravado.</p>
 {% endblock %}

@@ -18,8 +18,10 @@
 {% endif %}
 
 <p class="sub">Dispensa, férias, curso, operação (regra 7.5). No período, o militar é
-<strong>pulado</strong> na escala, mas mantém a vez. Para refletir num mês já fechado,
-use <em>Escalar período</em> com a opção <em>regravar</em>.</p>
+<strong>pulado</strong> na escala, mas mantém a vez.</p>
+<p class="sub">Se o período alcançar dias <strong>já escalados</strong>, o sistema leva
+você direto para <a href="/gestao/conflitos{{ '?militar_id=' ~ foco.id if foco }}">Conflitos</a>,
+onde se troca o escalado dia a dia — o que já estava gravado não se desfaz sozinho.</p>
 
 {% if erro %}<p class="erro">{{ erro }}</p>{% endif %}
 

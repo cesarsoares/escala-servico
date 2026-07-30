@@ -56,6 +56,12 @@ class Settings(BaseSettings):
     # qualquer um na rede da OM podia criar o primeiro gestor. Mora junto do
     # banco: quem instalou lê o arquivo, quem só alcança a porta 8000 não.
     primeiro_acesso_file: str = "dados/primeiro-acesso.txt"
+    # Código de RECUPERAÇÃO DE SENHA (ver services/recuperacao). Mesmo princípio
+    # do primeiro acesso: só quem alcança o servidor lê o arquivo. Diferente
+    # dele, é gerado sob demanda e VENCE — o de primeiro acesso morre quando
+    # nasce o gestor; este não teria fim natural nenhum.
+    recuperacao_file: str = "dados/recuperar-senha.txt"
+    recuperacao_validade_min: int = 60
     # Autenticação da gestão (regra 11). A consulta é aberta (regra 13.1); só
     # os endpoints de gestão exigem o token JWT assinado com secret_key.
     jwt_algoritmo: str = "HS256"

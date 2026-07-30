@@ -1,0 +1,89 @@
+{% extends "gestao/base_gestao.html" %}
+{% block title %}Conflitos com impedimento — Gestão{% endblock %}
+{% block gestao %}
+{% set qs = [] %}
+{% if filtros.militar_id %}{% set _ = qs.append('militar_id=' ~ filtros.militar_id) %}{% endif %}
+{% if filtros.escala_id %}{% set _ = qs.append('escala_id=' ~ filtros.escala_id) %}{% endif %}
+{% if filtros.de %}{% set _ = qs.append('de=' ~ filtros.de) %}{% endif %}
+{% if filtros.ate %}{% set _ = qs.append('ate=' ~ filtros.ate) %}{% endif %}
+{% set acao_qs = '?' ~ qs|join('&') if qs else '' %}
+
+<h2>Escalado e impedido no mesmo dia</h2>
+<p class="sub">Serviço já gravado cujo militar está de dispensa, férias, curso ou
+operação naquele dia (regra 7.5). Acontece quando o impedimento é lançado
+<strong>depois</strong> de o mês ter sido fechado: o motor nunca escala um militar
+impedido, mas o que já estava gravado não se desfaz sozinho.</p>
+<p class="sub">Aqui a correção é <strong>dia a dia</strong> — troca-se só o dia em
+conflito e o resto do mês continua como foi publicado. Para refazer a rotação
+inteira do período existe o <a href="/gestao/escalar">Escalar</a> com
+<em>regravar</em>, que também apaga as permutas do período.</p>
+
+{% if erro %}<p class="erro" role="alert">{{ erro }}</p>{% endif %}
+
+{% if foco %}
+  <p class="sub">Filtrado por <strong>{{ foco.posto_graduacao.sigla }} {{ foco.nome_guerra }}</strong>
+    — <a href="/gestao/conflitos">ver todos</a>.</p>
+{% endif %}
+
+{% if not conflitos %}
+  <p class="sucesso" role="status">Nenhum conflito: ninguém escalado está impedido no dia.</p>
+{% else %}
+<p class="sub"><strong>{{ conflitos|length }}</strong> dia(s) a resolver.</p>
+<table class="tabela">
+  <thead><tr>
+    <th>Dia</th><th>Escala</th><th>Posto</th><th>Escalado</th>
+    <th>Impedimento</th><th>Substituto proposto</th><th></th>
+  </tr></thead>
+  <tbody>
+  {% for c in conflitos %}
+    <tr>
+      <td>{{ c.dia.strftime('%d/%m/%Y') }}
+        <span class="fraco">{{ dias_semana[c.dia.weekday()] }}</span>
+        {# cor nunca é a única informação: a palavra vem escrita na tag #}
+        <span class="tag cor-{{ c.cor.value }}">{{ c.cor.value }}</span>
+        {% if c.dia < hoje %}<span class="fraco">(passado)</span>{% endif %}
+      </td>
+      <td>{{ c.escala_nome }}</td>
+      <td>{{ c.posto_rotulo }}</td>
+      <td>{{ c.militar }}</td>
+      <td>{{ c.impedimento_tipo }}
+        <span class="fraco">{{ c.impedimento_inicio.strftime('%d/%m') }}
+          a {{ c.impedimento_fim.strftime('%d/%m/%Y') }}</span></td>
+      <td>
+        {% if c.tem_permuta %}
+          <span class="fraco">serviço com permuta registrada</span>
+        {% elif c.substituto %}
+          <strong>{{ c.substituto.posto }} {{ c.substituto.nome_guerra }}</strong>
+        {% else %}
+          <span class="fraco">{{ c.motivo_sem_substituto }}</span>
+        {% endif %}
+      </td>
+      <td>
+        {% if c.tem_permuta %}
+          {# Quem cobre está cobrindo por ESTA pessoa (regra 9): trocar o
+             escalado tornaria a permuta mentirosa. O caminho é a tela de permutas. #}
+          <a class="botao mini secundario"
+             href="/gestao/permutas/servico/{{ c.servico_id }}">ver permuta</a>
+        {% else %}
+          {% if c.substituto %}
+            <form method="post" style="display:inline"
+                  action="/gestao/conflitos/servico/{{ c.servico_id }}/substituir{{ acao_qs }}">
+              <input type="hidden" name="militar_id" value="{{ c.substituto.id }}">
+              <button class="mini" type="submit">trocar</button>
+            </form>
+          {% endif %}
+          <a class="botao mini secundario"
+             href="/gestao/conflitos/servico/{{ c.servico_id }}">escolher outro</a>
+          <form method="post" style="display:inline"
+                action="/gestao/conflitos/servico/{{ c.servico_id }}/descobrir{{ acao_qs }}"
+                onsubmit="return confirm('Apagar este serviço? O dia fica com uma vaga a menos que os postos, e o painel passa a acusar.')">
+            <button class="mini perigo" type="submit">deixar vazio</button>
+          </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

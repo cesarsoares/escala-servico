@@ -71,9 +71,21 @@ AVISOS = {
     "militar-alterado": "Cadastro atualizado.",
     "militar-desativado": "Militar desativado — saiu da rotação; o histórico foi preservado.",
     "militar-reativado": "Militar reativado.",
-    "impedimento-criado": "Impedimento registrado. Para refletir num mês já fechado, "
-                          "re-escale o período com a opção 'regravar'.",
+    "impedimento-criado": "Impedimento registrado. Nenhum dia já escalado cai no período.",
+    # Quando o impedimento pega dias já fechados, o gestor é levado direto para a
+    # tela de conflitos — o aviso abaixo é o que ele lê ao chegar lá.
+    "impedimento-com-conflito": "Impedimento registrado — e ele alcança dias que já "
+                                "estavam escalados. Resolva-os abaixo: o motor não "
+                                "desfaz sozinho o que já foi gravado.",
     "impedimento-removido": "Impedimento removido.",
+    "conflito-resolvido": "Escalado trocado neste dia. O restante do período não mudou.",
+    "servico-lancado": "Serviço registrado. Ele já conta para a fila e para a folga "
+                       "deste militar (regras 6.2 e 7.4).",
+    "servico-alterado": "Serviço corrigido. A cor e a janela foram recalculadas pela "
+                        "nova data.",
+    "servico-removido": "Serviço apagado. A fila e a folga deste militar mudaram.",
+    "vaga-descoberta": "Serviço apagado — o dia ficou com uma vaga a menos que os "
+                       "postos, e o painel passa a acusar (regra 7.8).",
     "escala-criada": "Escala criada. Falta incluir os participantes.",
     "escala-alterada": "Dados da escala salvos. Vale da próxima escalação em diante.",
     "escala-extinta": "Escala extinta — saiu da rotação; os serviços gravados foram preservados.",
@@ -122,6 +134,9 @@ AVISOS = {
     "backup-automatico-gerado": "Cópia automática de hoje gerada.",
     "instalacao-restaurada": "Instalação restaurada. Entre com o login e a senha "
                              "que já usavam — as senhas vieram dentro do backup.",
+    "senha-recuperada": "Senha redefinida. Entre com o login e a nova senha. "
+                        "Para não depender do servidor da próxima vez, cadastre "
+                        "um segundo gestor em Configurações.",
 }
 templates.env.globals["AVISOS"] = AVISOS
 

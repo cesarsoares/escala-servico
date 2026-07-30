@@ -1,0 +1,55 @@
+{% extends "gestao/base_gestao.html" %}
+{% block title %}Trocar o escalado — Gestão{% endblock %}
+{% block gestao %}
+<p class="sub"><a href="/gestao/conflitos">← Conflitos</a></p>
+<h2>Trocar o escalado</h2>
+
+<div class="resultado">
+  <h3>{{ servico.dia.strftime('%d/%m/%Y') }}
+    <span class="fraco">{{ dias_semana[servico.dia.weekday()] }}</span>
+    <span class="tag cor-{{ servico.cor.value }}">{{ servico.cor.value }}</span></h3>
+  <p>Escalado hoje: <strong>{{ servico.militar.posto_graduacao.sigla }}
+     {{ servico.militar.nome_guerra }}</strong></p>
+  {% if conflito %}
+    <p class="sub">Impedido por <strong>{{ conflito.impedimento_tipo }}</strong>
+      de {{ conflito.impedimento_inicio.strftime('%d/%m/%Y') }}
+      a {{ conflito.impedimento_fim.strftime('%d/%m/%Y') }}.</p>
+    {% if conflito.substituto %}
+      <p class="sub">A fila indica <strong>{{ conflito.substituto.posto }}
+        {{ conflito.substituto.nome_guerra }}</strong> (regra 6.1). Escolher outro
+        nome é decisão sua — o sistema só recusa o que a regra proíbe.</p>
+    {% else %}
+      <p class="sub">A fila não achou substituto: {{ conflito.motivo_sem_substituto }}.</p>
+    {% endif %}
+  {% endif %}
+  <p class="sub">Serviço de {{ servico.inicio_dt.strftime('%d/%m %H:%M') }}
+     a {{ servico.termino_dt.strftime('%d/%m %H:%M') }}. Trocar o escalado move a
+     <strong>folga</strong> junto — diferente da permuta, em que a folga fica com
+     quem estava escalado (regra 9).</p>
+</div>
+
+<form method="post" action="/gestao/conflitos/servico/{{ servico.id }}/substituir"
+      class="formulario">
+  <label>Novo escalado
+    <select name="militar_id" required>
+      <option value="">—</option>
+      {% for sigla, gente in candidatos %}
+        <optgroup label="{{ sigla }}">
+        {% for m in gente %}
+          <option value="{{ m.id }}"
+            {{ 'selected' if conflito and conflito.substituto and m.id == conflito.substituto.id }}>
+            {{ m.nome_guerra }}</option>
+        {% endfor %}
+        </optgroup>
+      {% endfor %}
+    </select>
+  </label>
+  <button type="submit">Trocar o escalado</button>
+</form>
+
+<p class="sub">A lista traz os participantes ativos desta escala. A troca é recusada
+se o militar estiver impedido no dia, já estiver de serviço nesse dia (nesta escala
+ou numa concorrente), não concorrer nesta cor (regra 3.3.1) ou se a folga mínima
+não couber — inclusive contra o serviço que ele já tem <em>depois</em> deste
+(regra 7.4).</p>
+{% endblock %}

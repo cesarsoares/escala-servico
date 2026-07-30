@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Recuperar senha — Gestão{% endblock %}
+{% block content %}
+<div class="login-box">
+  <h2>Esqueci a senha</h2>
+  <p class="sub">Não há recuperação por e-mail: o sistema roda dentro da OM e pode
+  nem ter internet. Quem prova ter direito de redefinir a senha é
+  <strong>quem alcança o servidor</strong> — o código de recuperação é gravado
+  num arquivo lá dentro.</p>
+
+  {% if erro %}<p class="erro" role="alert">{{ erro }}</p>{% endif %}
+
+  {% if codigo %}
+    <p class="sucesso" role="status">
+      {% if codigo.novo %}Código gerado{% else %}Já havia um código válido{% endif %} e
+      gravado no servidor, em <code>{{ arquivo_codigo }}</code>.
+      Vale até <strong>{{ codigo.vence_em|hora_local }}</strong>.
+    </p>
+    <p class="sub">Abra esse arquivo na máquina onde o sistema roda (ou peça à seção
+    de TI) e digite o código abaixo. No Docker:
+    <code>docker compose exec app cat /{{ arquivo_codigo }}</code>.</p>
+    {# O código NÃO é exibido aqui de propósito: ele prova acesso ao servidor, e
+       mostrá-lo na tela o entregaria a qualquer um que abra esta página. #}
+  {% else %}
+    <form method="post" action="/gestao/recuperar-senha/pedir">
+      <button type="submit">Gerar código de recuperação</button>
+    </form>
+    <p class="sub">O código será escrito em <code>{{ arquivo_codigo }}</code> e vale
+    por {{ validade_min }} minutos. Ele não aparece nesta tela.</p>
+  {% endif %}
+
+  <hr>
+
+  <form method="post" action="/gestao/recuperar-senha">
+    <label>Código de recuperação
+      <input name="codigo" required autocomplete="off" autocapitalize="none"
+             autocorrect="off" spellcheck="false"></label>
+    <label>Login do gestor
+      <input name="login" value="{{ v.login or '' }}" required
+             autocapitalize="none" autocorrect="off" spellcheck="false"
+             autocomplete="username"></label>
+    <label>Nova senha
+      <input name="senha" type="password" required minlength="{{ senha_minima }}"
+             autocomplete="new-password"></label>
+    <label>Repita a nova senha
+      <input name="senha2" type="password" required minlength="{{ senha_minima }}"
+             autocomplete="new-password"></label>
+    <button type="submit">Redefinir a senha</button>
+  </form>
+  <p class="sub">Mínimo de {{ senha_minima }} caracteres. O código deixa de valer
+  assim que for usado.</p>
+
+  <hr>
+
+  <p class="sub"><strong>Com dois gestores isto não seria necessário:</strong> um
+  troca a senha do outro em Configurações → Gestores, sem tocar no servidor.
+  Depois de entrar, vale cadastrar o segundo.</p>
+  <p class="sub"><a href="/gestao/login">← voltar ao login</a></p>
+</div>
+{% endblock %}

@@ -93,7 +93,15 @@
       "Bash(MSYS_NO_PATHCONV=1 wsl -e bash -c \"python3 -m venv /tmp/tv 2>&1 | tail -5; echo '--- ensurepip? ---'; python3 -c 'import ensurepip' 2>&1 | tail -2; echo '--- pip do sistema ---'; python3 -m pip --version 2>&1 | tail -2\")",
       "Bash(MSYS_NO_PATHCONV=1 wsl -e bash -c \"docker --version 2>&1 | head -2; echo '---'; docker info >/dev/null 2>&1 && echo 'daemon OK' || echo 'daemon nao responde'\")",
       "Bash(MSYS_NO_PATHCONV=1 wsl -e bash -c \"bash /mnt/c/Users/cesar/AppData/Local/Temp/claude/c--Users-cesar-OneDrive-Documentos-projetos-escala/d9c9dc75-abfb-4595-9565-0878b57d0deb/scratchpad/docker.sh\")",
-      "Bash(MSYS_NO_PATHCONV=1 wsl -e bash -c \"docker run --rm -v /tmp:/t alpine sh -c 'rm -rf /t/tmp.*' 2>/dev/null; ls -d /tmp/tmp.* 2>/dev/null || echo 'temporarios removidos'; docker rmi -f escala-multiso >/dev/null 2>&1; echo 'imagem de teste removida'\")"
+      "Bash(MSYS_NO_PATHCONV=1 wsl -e bash -c \"docker run --rm -v /tmp:/t alpine sh -c 'rm -rf /t/tmp.*' 2>/dev/null; ls -d /tmp/tmp.* 2>/dev/null || echo 'temporarios removidos'; docker rmi -f escala-multiso >/dev/null 2>&1; echo 'imagem de teste removida'\")",
+      "PowerShell(python -m pytest \"C:\\\\Users\\\\cesar\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-cesar-OneDrive-Documentos-projetos-escala\\\\93680ba4-ff9f-46cf-bf30-dd0d00d1be09\\\\scratchpad\\\\test_impedimento_diag.py\" -v -s --no-header 2>&1)",
+      "PowerShell(python -m pytest tests/test_conflitos.py -q --no-header 2>&1)",
+      "PowerShell(python -m pytest tests/test_conflitos_web.py -q --no-header 2>&1)",
+      "PowerShell(python -m pytest tests/test_recuperacao_senha.py -q --no-header 2>&1)",
+      "PowerShell(python -m pytest tests/test_lancamento.py -q --no-header 2>&1)",
+      "PowerShell(cd 'c:\\\\Users\\\\cesar\\\\OneDrive\\\\Documentos\\\\projetos\\\\escala'; \\(Get-Content tests\\\\test_lancamento.py -Raw\\) -replace '\"ano\": 2026, \"mes\": 8', '\"ano\": SEG.year, \"mes\": SEG.month' -replace 'ano=2026&mes=8', 'ano={SEG.year}&mes={SEG.month}' -replace '\\\\{\"ano\": 2026, \"mes\": 8\\\\}', '{\"ano\": SEG.year, \"mes\": SEG.month}' | Set-Content tests\\\\test_lancamento.py -Encoding utf8; Select-String -Path tests\\\\test_lancamento.py -Pattern '2026' | Select-Object -First 20)",
+      "PowerShell(python -m pytest tests/test_manual.py -q --no-header 2>&1)",
+      "PowerShell(cd 'c:\\\\Users\\\\cesar\\\\OneDrive\\\\Documentos\\\\projetos\\\\escala'; $env:PYTHONPATH = \\(Get-Location\\).Path; python \"C:\\\\Users\\\\cesar\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-cesar-OneDrive-Documentos-projetos-escala\\\\93680ba4-ff9f-46cf-bf30-dd0d00d1be09\\\\scratchpad\\\\ver_manual.py\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\cesar\\AppData\\Local\\Temp\\claude\\c--Users-cesar-OneDrive-Documentos-projetos-escala\\9fbfa581-3529-44c1-8afc-0ec33252d2e7\\scratchpad"

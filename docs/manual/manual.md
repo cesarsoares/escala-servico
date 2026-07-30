@@ -141,6 +141,10 @@ ilegível são **recusados com o motivo**, para você corrigir o arquivo.
 Em **Configurações → Gestores**. A regra 11 prevê **múltiplos gestores**, e todo
 o histórico registra o nome de quem fez cada alteração.
 
+O passo é opcional, mas **o segundo gestor é o seguro contra a senha esquecida**:
+com dois, um troca a senha do outro em meio minuto, sem tocar no servidor. Com um
+só, toda senha perdida vira ida à máquina (item 2.8).
+
 Gestor **não se exclui** — o histórico aponta para ele e perderia o nome do
 responsável por cada mudança. Desativar tira o acesso e preserva o registro.
 
@@ -177,13 +181,69 @@ Os **tipos** (dispensa, férias, curso, operação…) variam de OM para OM e s�
 editáveis em **Configurações → Tipos de impedimento**. Tipo que a OM deixou de
 usar se **desativa**, não se apaga — os impedimentos antigos apontam para ele.
 
-> **Se o mês já estava fechado**, lançar o impedimento **não** refaz a escala. O
-> painel avisa quem está *escalado E impedido no mesmo dia*; a saída é voltar na
-> aba **Escalar** e re-escalar com a opção **regravar**.
->
-> Atenção: *regravar* apaga o período e refaz — **as permutas do período são
-> perdidas** e precisam ser refeitas. A tela lista o que foi perdido, e fica
-> tudo no histórico.
+> **Se o mês já estava fechado**, lançar o impedimento **não** desfaz o que já
+> está gravado — o motor nunca escala um militar impedido, mas ele já havia
+> escalado quando a dispensa ainda não existia. O sistema leva você direto para
+> a tela **Conflitos**, com o período já filtrado. Veja 2.2.1.
+
+### 2.2.1 Resolver o conflito: escalado e impedido no mesmo dia
+
+A tela **Conflitos** lista cada dia já gravado em que o escalado está impedido, e
+propõe **o próximo da fila** para cada um. Três caminhos por linha:
+
+- **trocar** — põe o substituto proposto naquele dia;
+- **escolher outro** — abre a lista dos participantes, se o proposto não servir;
+- **deixar vazio** — apaga o serviço. O dia fica com uma vaga a menos que os
+  postos e o painel passa a acusar (regra 7.8). É a saída quando não há quem
+  entre.
+
+**Só o dia em questão muda.** O resto do mês continua exatamente como foi
+publicado — que é o ponto: uma escala já divulgada em boletim não pode mudar
+inteira por causa de uma dispensa de três dias.
+
+A troca é **recusada com o motivo** se o substituto estiver impedido, já estiver
+de serviço naquele dia (nesta escala ou numa concorrente), não concorrer naquela
+cor (regra 3.3.1) ou se a folga mínima não couber — inclusive contra o serviço
+que ele já tem **depois** daquele dia.
+
+Se o serviço tem **permuta** registrada, a tela não oferece a troca: quem cobre
+está cobrindo por aquela pessoa (regra 9), e trocar o escalado por baixo tornaria
+o registro mentiroso. Cancele a permuta primeiro, se for o caso.
+
+> **Quando usar o *regravar* em vez disto:** quando você quer mesmo refazer a
+> rotação do período do zero. Ele apaga o período e reescala tudo — muda quem
+> serve em **todos** os dias e **as permutas do período são perdidas**. A tela
+> lista o que foi perdido, e fica tudo no histórico.
+
+### 2.2.2 Lançar um serviço à mão, ou corrigir a data de um
+
+Em **Escalar → Serviços lançados à mão** (ou direto em `/gestao/servicos`). Para
+duas situações:
+
+- **a escala foi manuseada fora do sistema** — a emergência resolvida no papel,
+  a troca combinada no corredor. Registre o que aconteceu e o sistema passa a
+  contar aquilo na fila e na folga;
+- **um serviço está gravado com a data errada.** Corrija a data ali mesmo.
+
+Não existe um campo de "último serviço" para editar, e isso é de propósito: a
+fila (regra 6.2) e a folga (regra 7.4) são **calculadas** a partir dos serviços
+gravados. Corrigir o serviço é corrigir as duas de uma vez; um campo à parte
+seria um segundo lugar guardando a mesma verdade, e dois lugares divergem.
+
+A tela **confere antes de gravar**. Duas listas:
+
+- o que **impede** (a vaga já tem serviço naquele dia; o militar estaria em dois
+  turnos ao mesmo tempo) — não há como gravar;
+- o que **apenas avisa** (folga menor que o mínimo; o militar não é mais
+  participante; a cor em que ele não concorre; data no futuro) — aparece, você
+  confirma, e grava. **O que aconteceu, aconteceu**: recusar impediria de
+  registrar exatamente o que se quer registrar.
+
+A **cor do dia sai do calendário**, nunca de quem digita — inclusive os feriados
+da OM e as cores forçadas (regra 5). Mudar a data de um serviço **recalcula a
+cor e o horário**: um serviço movido de sexta para sábado passa a ser vermelho.
+
+Serviço com **permuta** não é alterável pela tela: cancele a permuta antes.
 
 ### 2.3 Registrar uma permuta
 
@@ -319,6 +379,56 @@ registrada* e o *último dia escalado* do arquivo. Tudo o que foi lançado no
 servidor antigo depois disso se perdeu — confira o mês corrente no Painel antes
 de seguir escalando.
 
+### 2.8 Esqueci a senha
+
+Há três caminhos, do mais simples ao último recurso. Tente nesta ordem.
+
+**1. Outro gestor troca a sua senha.** Se a OM tem um segundo gestor, é ele quem
+resolve: entra normalmente e, em **Configurações → Gestores**, usa *trocar
+senha* na sua linha. Ninguém precisa tocar no servidor, e leva um minuto.
+
+É por isso que o segundo gestor é um passo da instalação (item 1.7). Com um
+gestor só, **toda** senha esquecida vira ida ao servidor.
+
+**2. Código de recuperação** — para quando você é o **único** gestor. No rodapé
+da tela de entrada há **Esqueci a senha**:
+
+1. clique em **Gerar código de recuperação**. O código é gravado num arquivo
+   **no servidor**, `dados/recuperar-senha.txt`, e **não aparece na tela**;
+2. leia o arquivo na máquina onde o sistema roda, ou peça à seção de TI:
+
+   ```
+   docker compose exec app cat /dados/recuperar-senha.txt
+   ```
+
+   No Windows, o arquivo está na pasta `dados` da instalação;
+3. de volta à tela, digite o código, o **seu login** e a nova senha.
+
+> **Por que o código não aparece na tela?** Porque é ele que prova que você tem
+> a máquina, e não apenas a página aberta. Qualquer pessoa da rede da OM alcança
+> a tela de entrada; só quem alcança o servidor lê o arquivo. Mostrá-lo ali
+> anularia a proteção inteira.
+
+O código **vence em 1 hora** e deixa de valer assim que é usado. Pedir de novo
+dentro da validade devolve **o mesmo** código, e não um novo — assim ninguém
+invalida, recarregando a página, o código que a TI acabou de ditar ao telefone.
+
+Se errar a senha nova (curta demais, ou as duas diferentes), o código **continua
+valendo**: não é preciso voltar ao servidor.
+
+**3. Pelo terminal** — quando nem a tela sobe:
+
+```
+docker compose exec app python -m app.seeds.usuario <login> "<nome>"
+```
+
+O comando **cria ou troca a senha** do login informado, e pede a senha nova ali
+mesmo.
+
+> **Pediram um código de recuperação e não foi você?** Apague o arquivo
+> `dados/recuperar-senha.txt`. Sem ele ninguém redefine senha nenhuma — e pedir
+> o código não revela nada a quem não alcança a máquina.
+
 ---
 
 ## 3. Consultar e imprimir
@@ -412,6 +522,13 @@ folga mínima** (contada de qualquer escala concorrente, não só desta); **não
 concorre naquela cor** (regra 3.3.1 — confira a coluna *Concorre em* na escala);
 ou **não é participante ativo** da escala.
 
+**Lancei o impedimento e o militar continua escalado no período.**
+O impedimento vale da **próxima escalação** em diante: os dias que já estavam
+gravados não se desfazem sozinhos. Resolva-os na tela **Conflitos** (item
+2.2.1) — ela troca o escalado **só nos dias em conflito**, sem mexer no resto do
+mês. Ao gravar um impedimento que alcança dias já escalados, o sistema leva você
+direto para lá.
+
 **Como acho alguém no efetivo?**
 Pela busca no alto da tela **Efetivo**: ela casa o nome de guerra **ou** o nome
 completo, sem diferenciar maiúsculas, e dá para filtrar por posto/graduação e
@@ -442,17 +559,14 @@ de informação. Quem restaura a instalação é o arquivo `.sqlite3`. O
 `servicos.csv` da exportação, esse sim, entra numa instalação nova pela tela
 *Importar histórico*.
 
-**Perdi a senha do único gestor.**
-A TI local recria pelo terminal do servidor, com
+**Esqueci a senha.**
+Três caminhos, no item **2.8**: outro gestor troca a sua (o mais simples), o
+**código de recuperação** lido no servidor (para o gestor único), ou o terminal.
 
-```
-docker compose exec app python -m app.seeds.usuario <login> "<nome>"
-```
-
-O comando **cria ou troca a senha** do login informado. A tela de primeiro
-acesso não serve para isso: ela se fecha assim que existe um gestor, justamente
-para não virar um cadastro aberto. Por isso o sistema também não deixa desativar
-o último gestor ativo — e por isso o segundo gestor é um passo da instalação.
+**Posso excluir um gestor?**
+Não; **desative**. O Histórico aponta para ele e perderia o nome do responsável
+por cada alteração. O sistema também não deixa desativar o **último gestor
+ativo**, nem o seu próprio acesso.
 
 ---
 

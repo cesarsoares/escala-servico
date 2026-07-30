@@ -30,11 +30,12 @@ from app.models.referencia import OrganizacaoMilitar, PostoGraduacao, TipoImpedi
 from app.models.servico import Permuta, Servico
 from app.normalizacao import so_digitos
 from app.security import criar_token, hash_dummy, ler_token, verificar_senha
-from app.services import auditoria, importacao, rotacao
+from app.services import auditoria, conflitos, importacao, rotacao
 from app.services import configuracao as cfg
 from app.services import instalacao
 from app.services import painel as painel_service
 from app.services import permuta as permuta_service
+from app.services import recuperacao
 from app.services.publicacao import DIAS_SEMANA, MESES
 from app.web import ANO_MAX, ANO_MIN, templates
 
@@ -176,6 +177,70 @@ def logout():
     resp = RedirectResponse("/gestao/login", status_code=303)
     resp.delete_cookie("access_token")
     return resp
+
+
+# --- Senha esquecida (demanda do Brigada, 30/07) ---
+# A OM com DOIS gestores já se resolvia sozinha: um troca a senha do outro em
+# Configurações → Gestores. O caso sem saída era o do gestor único — ninguém
+# logado para resetar. A prova de autoridade aqui é o acesso ao SERVIDOR: o
+# código vai para um arquivo ao lado do banco, como a senha de primeiro acesso.
+def _tela_recuperar(request, erro=None, aviso=None, codigo=None, v=None, status=200):
+    return templates.TemplateResponse(request, "gestao/recuperar_senha.html", {
+        "erro": erro, "aviso": aviso, "codigo": codigo, "v": v or {},
+        "senha_minima": cfg.SENHA_MINIMA,
+        "arquivo_codigo": settings.recuperacao_file,
+        "validade_min": settings.recuperacao_validade_min,
+    }, status_code=status)
+
+
+@router.get("/recuperar-senha", response_class=HTMLResponse)
+def recuperar_senha_form(request: Request, db: Session = Depends(get_db)):
+    """Instalação sem gestor não recupera nada — vai para o primeiro acesso."""
+    if instalacao.sem_gestor(db):
+        return RedirectResponse("/gestao/primeiro-acesso", status_code=303)
+    return _tela_recuperar(request)
+
+
+@router.post("/recuperar-senha/pedir", response_class=HTMLResponse)
+def pedir_codigo(request: Request, db: Session = Depends(get_db)):
+    """Grava o código no servidor. NÃO o exibe: exibi-lo anularia a trava.
+
+    A tela diz onde ele está e até quando vale. Quem está só na rede fica sabendo
+    que um arquivo foi escrito numa máquina a que não tem acesso — que é
+    exatamente o que se quer.
+    """
+    if instalacao.sem_gestor(db):
+        return RedirectResponse("/gestao/primeiro-acesso", status_code=303)
+    codigo = recuperacao.pedir(db)
+    return _tela_recuperar(request, codigo=codigo)
+
+
+@router.post("/recuperar-senha", response_class=HTMLResponse)
+def recuperar_senha(
+    request: Request,
+    codigo: str = Form(""),
+    login: str = Form(""),
+    senha: str = Form(""),
+    senha2: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    if instalacao.sem_gestor(db):
+        return RedirectResponse("/gestao/primeiro-acesso", status_code=303)
+    # O login volta preenchido; o código e a senha, NUNCA — devolver credencial
+    # no HTML a deixa no cache do navegador e no histórico de quem usa a máquina.
+    digitado = {"login": login}
+    try:
+        usuario = recuperacao.redefinir(db, codigo, login, senha, senha2)
+    except recuperacao.RecuperacaoNegada as e:
+        return _tela_recuperar(request, erro=e.motivo, v=digitado, status=400)
+
+    # Auditoria (regra 11): o ato é atribuído ao próprio gestor, que é a única
+    # identidade em jogo — quem provou o acesso ao servidor não tem login.
+    auditoria.registrar(db, usuario_id=usuario.id, entidade="usuario",
+                        entidade_id=usuario.id, acao="recuperar-senha",
+                        depois={"login": usuario.login, "por": "codigo-no-servidor"})
+    db.commit()
+    return RedirectResponse("/gestao/login?ok=senha-recuperada", status_code=303)
 
 
 # --- Painel ---
@@ -779,6 +844,19 @@ def criar_impedimento(
     auditoria.registrar(db, usuario_id=gestor.id, entidade="impedimento",
                         entidade_id=imp.id, acao="criar", depois=auditoria.snapshot(imp))
     db.commit()
+
+    # Se o impedimento alcança dias JÁ escalados, é aí que está o problema real
+    # (demanda do Brigada, 30/07): o motor não escala impedido, mas o que já foi
+    # gravado não se desfaz sozinho. Levar o gestor direto para a resolução vale
+    # mais que uma confirmação verde e um conflito silencioso mês adentro.
+    # `com_substituto=False`: aqui só se pergunta SE existe conflito.
+    if conflitos.conflitos(db, militar_id=militar_id, de=d_ini, ate=d_fim,
+                           com_substituto=False):
+        return RedirectResponse(
+            f"/gestao/conflitos?militar_id={militar_id}&de={d_ini.isoformat()}"
+            f"&ate={d_fim.isoformat()}&ok=impedimento-com-conflito",
+            status_code=303,
+        )
     return RedirectResponse(_volta_para(contexto, "impedimento-criado"), status_code=303)
 
 

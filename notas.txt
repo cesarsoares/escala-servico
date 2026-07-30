@@ -4,10 +4,26 @@ com teste, ou decisão registrada no CLAUDE.md.
 
 --
 
-[resolvidos em 2026-07-27 — podem ser apagados]
+[resolvidos em 2026-07-30 — podem ser apagados]
 
-Um militar pode participar somente na escala vermelha. Por exemplo. A função do Tenente Epson o impede de prestar serviço nos dias de semana, de modo que somente será escalado nos finais de semana.
+1. Mesmo colocado impedimento o militar ainda é escalado no período.
+   -> O motor NÃO erra (provado por 5 testes ponta a ponta). O que acontece é a
+      dispensa chegar depois do mês fechado. Nova tela /gestao/conflitos troca o
+      escalado DIA A DIA, sem refazer o mês. Gravar o impedimento sobre dias já
+      escalados leva direto para lá. Manual 2.2.1.
 
-Menu lateral para escalas
+2. Alterar a data em que o militar tirou o último serviço.
+   -> Não virou campo: a fila e a folga são derivadas de `servico`. Nova tela
+      /gestao/servicos lança, corrige (data, escalado, posto) e remove serviço.
+      Conferir -> confirmar; erro impede, aviso deixa passar. Manual 2.2.2.
 
-A importação de arquivos .csv persiste com os militares registrados no sistema? Exemplo: Ao importar a escala de serviço para termos histórico, o sargento joão aparece nos dados da planilha, mas não tem registro no sistema.
+3. Recuperar a senha esquecida do gestor.
+   -> Com dois gestores um troca a senha do outro (já existia). Para o gestor
+      único, "Esqueci a senha" no login: código gravado em
+      dados/recuperar-senha.txt, vence em 1h, morre ao usar. Manual, seção 4.
+
+[a validar com o Brigada — em aberto desde 27/07]
+
+- remoção da previsão (afeta a regra 10)
+- override de dia para PRETA (generaliza a regra 5.3)
+- participação restrita a uma cor (regra 3.3.1, escrita em 27/07)
