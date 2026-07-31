@@ -108,7 +108,8 @@ app/
   api/        <- Rotas HTTP.
   web/        <- Telas (Jinja + estáticos): consulta aberta + /gestao + /manual.
                  static/menu.js é o ÚNICO JavaScript, e é nosso (cortina de
-                 escalas da consulta). Nada de biblioteca nem CDN.
+                 escalas: consulta, Permutas e Serviços lançados à mão, pelo
+                 macro templates/_cortina_escalas.html). Sem biblioteca nem CDN.
   pdf/        <- Exportação PDF (WeasyPrint). STUB.
 tests/        <- Testes do domínio (passando).
 docs/         <- Regras completas (.md e .pdf). FONTE DA VERDADE.
@@ -1099,8 +1100,9 @@ escalado / posto, remover. A fila e a folga passam a considerá-lo sozinhas.
   Guardar a cor antiga poria o militar na fila errada.
 - `ignorar_servico_id` na análise: sem ele, editar só o militar faria a própria
   linha acusar "vaga já ocupada".
-- O `<select>` traz o **efetivo inteiro**, não só os participantes — o que
-  aconteceu pode ter envolvido quem hoje não concorre (vira aviso).
+- O `<select>` trazia o **efetivo inteiro**; **revertido no mesmo dia** para os
+  participantes da escala — ver "Ajustes de uso" logo abaixo. O aviso "não é
+  participante" continua no serviço, para a API e o CSV.
 - ⚠️ **`tests/test_lancamento.py` calcula as datas a partir de `date.today()`**
   (`_segunda_passada`). Data cravada faria o aviso "data no futuro" aparecer ou
   sumir conforme o dia em que a suíte roda.
@@ -1129,6 +1131,40 @@ anularia a trava inteira.
   navegador); só o login, que não é segredo.
 - Reativa o gestor desativado por engano: quem tem o código já provou mais
   acesso do que o gestor comum tem.
+
+### Ajustes de uso, no mesmo dia (30/07 — os 2 pedidos sobre a tela nova)
+
+Testes em `tests/test_ajustes_0730.py`. Os dois vieram do uso real da tela de
+Serviços lançados à mão, e um deles **reverte uma decisão registrada aqui**.
+
+1. **O `<select>` de militar traz os PARTICIPANTES da escala**, não o efetivo
+   inteiro. Estava documentado como escolha ("o que aconteceu pode ter envolvido
+   quem hoje não concorre"), e o uso real desmentiu: abrir o Museu — **11
+   participantes** — e receber **285 nomes** torna o campo inutilizável. Quem
+   deve concorrer e não está lá se inclui em Escalas → (a escala) →
+   Participantes, que é onde o gestor já administra isso. **A regra não mudou**:
+   `lancamento.analisar` continua tratando "não é participante" como AVISO, e é
+   por ali que passam a importação de CSV e a API.
+   - ⚠️ **A guarda que o pedido não citava e sem a qual isto vira defeito:** ao
+     **corrigir** uma linha, o escalado gravado entra na lista mesmo que hoje não
+     participe mais — ou esteja desativado (`_candidatos(incluir_id=…)`). Sem
+     isso, abrir "corrigir" para acertar só a data salvaria com OUTRA pessoa.
+2. **A cortina lateral de escalas virou componente compartilhado**
+   (`templates/_cortina_escalas.html`, macro com parâmetros explícitos — variável
+   de `{% with %}` não atravessa `{% include %}` de forma confiável). Nasceu na
+   consulta e agora serve **Permutas** e **Serviços lançados à mão**: em chips,
+   vinte escalas quebram em três faixas. Decisão do usuário, por consistência.
+   - Quem usa carrega `/static/menu.js` no `{% block cabeca %}`, e o estado no
+     `localStorage` é o mesmo da consulta — a cortina segue como foi deixada.
+   - **Junto veio o `de-qual-escala` no título do mês**, obrigatoriamente: sem o
+     chip marcado, nada diria de qual escala é o mês (a lição da consulta, em
+     27/07). O seletor no CSS deixou de exigir `h2` — a gestão usa `h3`.
+
+**Achado ao conferir a captura, não pelos testes:** a tela de Serviços lançados à
+mão nomeava o mês com `MESES[mes - 1]`. `MESES` tem `""` na posição 0 (é indexado
+pelo número do mês, como em `main.py` e em permutas): agosto saía como "julho" e
+**janeiro saía vazio**. Vale a pena repetir a conferência visual — foi ela, e não
+a suíte, que viu.
 
 ### Nenhuma das três ganhou aba na barra de navegação
 

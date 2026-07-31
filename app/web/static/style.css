@@ -182,7 +182,9 @@ body { transition:padding-left .35s ease; }
 .mes-nav { display:flex; align-items:center; justify-content:center; gap:16px;
            margin:8px 0 18px; flex-wrap:wrap; }
 .mes-nav h2 { margin:0; font-size:21px; min-width:200px; text-align:center; color:var(--azul); }
-.mes-nav h2 .de-qual-escala { display:block; font-size:12.5px; font-weight:600; color:var(--tinta-3);
+/* Vale em h2 e h3: a mesma tarja de "de qual escala é este mês" aparece na
+   consulta (h2) e nas telas de gestão que ganharam a cortina (h3). */
+.mes-nav .de-qual-escala { display:block; font-size:12.5px; font-weight:600; color:var(--tinta-3);
                               letter-spacing:.04em; text-transform:uppercase; }
 .seta { text-decoration:none; color:var(--azul); font-size:17px; line-height:1;
         width:38px; height:38px; display:inline-flex; align-items:center; justify-content:center;

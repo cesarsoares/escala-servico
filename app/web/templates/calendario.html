@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_cortina_escalas.html" import cortina_escalas %}
 {% block title %}{{ escala.nome if escala else "Escala" }} — {{ mes_nome }}/{{ ano }}{% endblock %}
 {% block content %}
 {% if not escalas %}
@@ -6,44 +7,9 @@
 {% else %}
 {# Menu lateral em cortina: fica fora da tela e desliza pela seta. Uma OM pode
    ter dezenas de escalas — em linha, os chips quebravam em três faixas e
-   empurravam o calendário para fora da tela.
-
-   O <noscript> devolve a lista ao topo da página: sem JavaScript a cortina não
-   abre, e uma consulta ABERTA (regra 13.1) não pode esconder as outras escalas
-   de quem estiver num navegador com script desligado. #}
-<aside id="menu-escalas" class="menu-escalas" aria-label="Escalas">
-  {# A aba é o único ponto de entrada da cortina: sem a palavra escrita, ninguém
-     adivinha o que a seta abre. #}
-  <button type="button" id="puxador-escalas" class="puxador"
-          aria-controls="menu-escalas" aria-expanded="false"
-          aria-label="Abrir a lista de escalas">
-    <span class="rotulo-puxador">Escalas</span>
-    <span class="seta-puxador" aria-hidden="true">&#9658;</span>
-  </button>
-  <p class="menu-titulo">Escalas <span class="conta">{{ escalas|length }}</span></p>
-  <nav class="escalas">
-    {% for e in escalas %}
-      <a href="/?escala_id={{ e.id }}&ano={{ ano }}&mes={{ mes }}"
-         class="chip {{ 'ativo' if e.id == escala.id }}"
-         {{ 'aria-current=page' if e.id == escala.id }}>{{ e.nome }}</a>
-    {% endfor %}
-  </nav>
-</aside>
-<noscript>
-  <style>
-    .menu-escalas { position:static; width:auto; height:auto; padding:14px 16px;
-                    background:var(--papel); color:var(--tinta); box-shadow:var(--sombra);
-                    border:1px solid var(--borda); border-radius:var(--raio);
-                    margin-bottom:18px; }
-    .menu-escalas .puxador { display:none; }
-    .menu-escalas .menu-titulo { color:var(--azul); }
-    .menu-escalas .escalas { flex-direction:row; flex-wrap:wrap; padding:0;
-                             max-height:none; overflow:visible; }
-    .menu-escalas .chip { background:var(--papel); color:var(--tinta-2);
-                          border-color:var(--borda); }
-    .menu-escalas .chip.ativo { background:var(--azul); color:#fff; }
-  </style>
-</noscript>
+   empurravam o calendário para fora da tela. O componente é compartilhado com
+   as telas de gestão que também escolhem UMA escala (ver o macro). #}
+{{ cortina_escalas(escalas, escala, '/', ano, mes) }}
 
 <div class="mes-nav">
   <a class="seta" href="/?escala_id={{ escala.id }}&ano={{ prev[0] }}&mes={{ prev[1] }}">&larr;</a>

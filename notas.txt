@@ -27,3 +27,23 @@ com teste, ou decisão registrada no CLAUDE.md.
 - remoção da previsão (afeta a regra 10)
 - override de dia para PRETA (generaliza a regra 5.3)
 - participação restrita a uma cor (regra 3.3.1, escrita em 27/07)
+
+[demandas em 30/07/26 — resolvidas no mesmo dia]
+
+4. Em Serviços lançados à mão, ao clicar na escala (Museu, Adjunto do Oficial de
+   Dia) todos os militares eram listados; devem aparecer só os participantes.
+   -> Feito. O <select> traz os participantes ATIVOS da escala (o Museu passou de
+      285 nomes para 11). Quem falta se inclui em Escalas -> (a escala) ->
+      Participantes. Exceção: ao CORRIGIR, quem está gravado na linha continua na
+      lista mesmo que hoje não participe — senão acertar a data trocaria a pessoa.
+      A regra não mudou: lançar para não-participante segue sendo AVISO (fato
+      consumado), o que vale para a importação de CSV e para a API.
+
+5. A lista de escalas em chips poluiria a tela com ~20 escalas.
+   -> Virou a cortina lateral da consulta, agora componente único
+      (templates/_cortina_escalas.html), em Serviços lançados à mão e Permutas.
+      Escolha do usuário, por consistência; se o desenho não convencer, muda-se.
+
+6. Achado ao conferir a captura: o título do mês em Serviços lançados à mão saía
+   um mês atrasado (agosto lido como "julho") e em janeiro saía VAZIO — MESES tem
+   "" na posição 0. Corrigido, com teste.

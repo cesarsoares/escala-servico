@@ -245,6 +245,15 @@ cor e o horário**: um serviço movido de sexta para sábado passa a ser vermelh
 
 Serviço com **permuta** não é alterável pela tela: cancele a permuta antes.
 
+A lista de militares traz **os participantes da escala aberta**. Se quem serviu
+não estiver ali, inclua a pessoa em **Escalas → (a escala) → Participantes** e
+volte — é a mesma tela em que você isenta e reinclui. Ao usar **corrigir**, quem
+está gravado na linha continua na lista mesmo que hoje não participe mais: assim
+acertar a data nunca troca a pessoa sem querer.
+
+Para trocar de escala, use a cortina **Escalas** na lateral esquerda (a mesma da
+tela de consulta). Ela fica aberta até você fechá-la.
+
 ### 2.3 Registrar uma permuta
 
 Em **Permutas**, escolha a escala e o mês. A tela lista os dias com serviço;

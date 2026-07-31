@@ -20,11 +20,11 @@ from datetime import date
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
-from app.models.escala import Escala, Posto
+from app.models.escala import Escala, Participacao, Posto
 from app.models.gestao import Usuario
 from app.models.militar import Militar
 from app.models.servico import Permuta, Servico
@@ -36,7 +36,37 @@ from app.web.gestao import agrupar_por_posto, gestor_web
 router = APIRouter(prefix="/gestao", tags=["web-gestão"])
 
 
-def _contexto(db: Session, escala_id: int | None, ano: int, mes: int) -> dict:
+def _candidatos(db: Session, escala: Escala | None, incluir_id: int | None) -> list[Militar]:
+    """Participantes ATIVOS da escala, para o `<select>` de militar.
+
+    Era o efetivo inteiro. O Brigada reclamou com razão (30/07): abrir o Museu,
+    que tem 11 participantes, e receber 285 nomes torna o campo inutilizável — e
+    quem deve concorrer se inclui na própria escala (tela de participantes), que
+    é onde ele já administra isso.
+
+    `incluir_id` é o escalado da linha que está sendo CORRIGIDA: ele entra mesmo
+    que hoje não seja mais participante — ou esteja desativado — porque abrir
+    "corrigir" para acertar só a data não pode trocar a pessoa por engano. Fora
+    esse caso, os avisos de `lancamento.analisar` (não é participante, isento,
+    cor em que não concorre) seguem valendo para a API e para o CSV.
+    """
+    if escala is None:
+        return []
+    participa = and_(Participacao.militar_id == Militar.id,
+                     Participacao.escala_id == escala.id,
+                     Participacao.ativo.is_(True))
+    return list(db.scalars(
+        select(Militar)
+        .outerjoin(Participacao, participa)
+        .options(joinedload(Militar.posto_graduacao))
+        .where(or_(and_(Militar.ativo.is_(True), Participacao.id.isnot(None)),
+                   Militar.id == incluir_id))
+        .order_by(Militar.nome_guerra)
+    ).unique())
+
+
+def _contexto(db: Session, escala_id: int | None, ano: int, mes: int,
+              incluir_militar_id: int | None = None) -> dict:
     """Lista do mês da escala escolhida + o que os formulários precisam."""
     escalas = db.scalars(select(Escala).order_by(Escala.ativa.desc(), Escala.nome)).all()
     escala = next((e for e in escalas if e.id == escala_id), None)
@@ -63,26 +93,24 @@ def _contexto(db: Session, escala_id: int | None, ano: int, mes: int) -> dict:
                     .where(Permuta.servico_id.in_([s.id for s in servicos]))).all()
             }
 
-    # Efetivo INTEIRO, não só os participantes: o lançamento manual existe para
-    # registrar o que aconteceu, e o que aconteceu pode ter envolvido quem hoje
-    # não participa da escala (vira aviso, não recusa).
-    efetivo = db.scalars(
-        select(Militar).options(joinedload(Militar.posto_graduacao))
-        .where(Militar.ativo.is_(True))
-    ).all()
     return {
         "escalas": escalas, "escala": escala, "servicos": servicos, "postos": postos,
         # rótulo do posto na tabela: o id cru não diz nada a quem confere o mês
         "rotulo_posto": {p.id: (p.rotulo or f"Posto {p.ordem}") for p in postos},
-        "permutados": permutados, "militares": agrupar_por_posto(efetivo),
-        "ano": ano, "mes": mes, "mes_nome": MESES[mes - 1], "dias_semana": DIAS_SEMANA,
+        "permutados": permutados,
+        "militares": agrupar_por_posto(_candidatos(db, escala, incluir_militar_id)),
+        # MESES tem "" na posição 0 (é indexado pelo número do mês): com
+        # `mes - 1` o título saía um mês atrasado, e em janeiro saía VAZIO.
+        "ano": ano, "mes": mes, "mes_nome": MESES[mes], "dias_semana": DIAS_SEMANA,
         "hoje": date.today(),
     }
 
 
 def _tela(request, db, gestor, escala_id, ano, mes, **extra):
     status = extra.pop("status", 200)
-    ctx = _contexto(db, escala_id, ano, mes)
+    editando = extra.get("editando")
+    ctx = _contexto(db, escala_id, ano, mes,
+                    incluir_militar_id=editando.militar_id if editando else None)
     ctx.update({"gestor": gestor, "analise": None, "form": {}, "erro": None,
                 "editando": None})
     ctx.update(extra)

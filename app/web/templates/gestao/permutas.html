@@ -1,6 +1,8 @@
 {% extends "gestao/base_gestao.html" %}
+{% from "_cortina_escalas.html" import cortina_escalas %}
 {% block title %}Permutas — Gestão{% endblock %}
 {% block estilos %}<link rel="stylesheet" href="/static/graficos.css">{% endblock %}
+{% block cabeca %}<script src="/static/menu.js"></script>{% endblock %}
 {% block gestao %}
 <h2>Permutas</h2>
 <p class="sub">Troca é <strong>registro puro</strong> (regra 9): anota quem cobriu o
@@ -13,16 +15,14 @@ de quem vai cobrir.</p>
 {% if not escalas %}
   <p class="sub">Nenhuma escala cadastrada.</p>
 {% else %}
-<nav class="escalas">
-  {% for e in escalas %}
-    <a href="/gestao/permutas?escala_id={{ e.id }}&ano={{ ano }}&mes={{ mes }}"
-       class="chip {{ 'ativo' if e.id == escala.id }}">{{ e.nome }}</a>
-  {% endfor %}
-</nav>
+{{ cortina_escalas(escalas, escala, '/gestao/permutas', ano, mes) }}
 
 <div class="mes-nav">
   <a class="seta" href="/gestao/permutas?escala_id={{ escala.id }}&ano={{ prev[0] }}&mes={{ prev[1] }}">&larr;</a>
-  <h2>{{ mes_nome|capitalize }} / {{ ano }}</h2>
+  {# Com a cortina fechada é o título que diz de qual escala é o mês — sem isto
+     a cortina troca poluição por desorientação (a mesma lição da consulta). #}
+  <h2><span class="de-qual-escala">{{ escala.nome }}</span>
+      {{ mes_nome|capitalize }} / {{ ano }}</h2>
   <a class="seta" href="/gestao/permutas?escala_id={{ escala.id }}&ano={{ prox[0] }}&mes={{ prox[1] }}">&rarr;</a>
 </div>
 
