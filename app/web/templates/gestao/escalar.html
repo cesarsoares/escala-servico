@@ -23,6 +23,41 @@ o passado.</p>
     <li>dias com efetivo insuficiente (regra 7.8):
         <strong class="{{ 'alerta' if resultado.alertas }}">{{ resultado.alertas }}</strong></li>
   </ul>
+
+  {% if resultado.faltas %}
+  {# O motivo de cada dia curto. Antes daqui a tela dava só o número, e o gestor
+     não tinha como saber se o caso pedia mais gente na escala, o fim de uma
+     dispensa, ou apenas esperar a folga fechar. #}
+  <div class="faltas">
+    <h4>Por que faltou gente</h4>
+    {% for f in resultado.faltas %}
+    <div class="falta">
+      <p class="falta-dia">
+        <strong>{{ f.dia.strftime('%d/%m/%Y') }}</strong>
+        <span class="tag cor-{{ f.cor.value }}">{{ f.cor.value }}</span>
+        {{ f.escalados }} de {{ f.postos }} vaga(s) preenchida(s) —
+        <strong>{{ f.vagas_abertas }}</strong> em aberto
+      </p>
+      <ul class="falta-motivos">
+        {% for frase, quantos in f.por_motivo %}
+        <li><strong>{{ quantos }}</strong> {{ frase }}</li>
+        {% endfor %}
+      </ul>
+      {% if f.liberam_primeiro %}
+      <p class="sub">Sai da folga primeiro:
+        {% for m, quando in f.liberam_primeiro %}
+          {{ m.posto }} {{ m.nome_guerra }} ({{ quando.strftime('%d/%m') }}){{ ", " if not loop.last }}
+        {% endfor %}
+      </p>
+      {% endif %}
+    </div>
+    {% endfor %}
+    {% if resultado.faltas_ocultas %}
+    <p class="sub">… e mais {{ resultado.faltas_ocultas }} dia(s) na mesma
+      situação. Escale um período menor para ver todos.</p>
+    {% endif %}
+  </div>
+  {% endif %}
   {% if resultado.permutas_apagadas %}
   {# Permuta é registro manual do gestor (regra 9): se o 'regravar' a levou,
      ele precisa ver o que precisa refazer. Fica também na auditoria. #}

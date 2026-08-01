@@ -1,9 +1,10 @@
 """Gestão de permutas (regra 9) — protegida por login (regra 11).
 
 Registro PURO: a permuta anota que outro militar cobriu um serviço; a folga NÃO
-muda de dono (segue em servico.militar_id). A guarda de folga mínima do
-substituto (regra 10.5) mora no service `permuta`. Toda mutação é auditada; o
-`autorizado_por` vem do gestor logado, não do corpo.
+muda de dono (segue em servico.militar_id) — e, desde 01/08/2026, também não
+barra a troca (regra 10.5). As guardas que sobraram (impedimento, dobra no mesmo
+dia) moram no service `permuta`. Toda mutação é auditada; o `autorizado_por` vem
+do gestor logado, não do corpo.
 """
 from __future__ import annotations
 
@@ -29,9 +30,10 @@ def registrar_permuta(
 ):
     """Registra a cobertura de um serviço por um substituto (regra 9).
 
-    404 se serviço/militar não existem; 409 se a troca fere uma regra de guarda
-    (substituto = escalado, serviço já permutado, folga mínima ou impedimento —
-    regra 10.5). A folga NÃO é recalculada.
+    404 se serviço/militar não existem; 409 se a troca esbarra numa guarda
+    (substituto = escalado, serviço já permutado, substituto impedido no dia ou
+    já de serviço nesse dia). Folga mínima não barra mais (regra 10.5). A folga
+    NÃO é recalculada.
     """
     try:
         permuta = permuta_service.registrar_permuta(

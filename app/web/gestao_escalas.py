@@ -231,7 +231,7 @@ def escala_detalhe(escala_id: int, request: Request, db: Session = Depends(get_d
                    gestor: Usuario = Depends(gestor_web)):
     escala = _obter_escala(db, escala_id)
     if escala is None:
-        return RedirectResponse("/gestao/escalas", status_code=303)
+        return RedirectResponse("/gestao/escalas?falha=escala-inexistente", status_code=303)
     return _tela_escala(request, db, gestor, escala)
 
 
@@ -246,7 +246,7 @@ def escala_atualizar(
     """Altera os atributos da escala. Os postos têm seção própria."""
     escala = _obter_escala(db, escala_id)
     if escala is None:
-        return RedirectResponse("/gestao/escalas", status_code=303)
+        return RedirectResponse("/gestao/escalas?falha=escala-inexistente", status_code=303)
 
     v = {c: locals().get(c, "") for c in _CAMPOS_ESCALA}
     dados, erro = _ler_form_escala(v, com_postos=False)
@@ -299,7 +299,7 @@ def posto_adicionar(
     """Acrescenta uma vaga ao dia da escala. A ordem é a próxima livre."""
     escala = _obter_escala(db, escala_id)
     if escala is None:
-        return RedirectResponse("/gestao/escalas", status_code=303)
+        return RedirectResponse("/gestao/escalas?falha=escala-inexistente", status_code=303)
     if len(escala.postos) >= MAX_POSTOS:
         return _tela_escala(request, db, gestor, escala,
                             f"A escala já tem o máximo de {MAX_POSTOS} postos.",
@@ -344,10 +344,11 @@ def posto_remover(
     """
     escala = _obter_escala(db, escala_id)
     if escala is None:
-        return RedirectResponse("/gestao/escalas", status_code=303)
+        return RedirectResponse("/gestao/escalas?falha=escala-inexistente", status_code=303)
     posto = db.get(Posto, posto_id)
     if posto is None or posto.escala_id != escala_id:
-        return RedirectResponse(f"/gestao/escalas/{escala_id}#postos", status_code=303)
+        return RedirectResponse(f"/gestao/escalas/{escala_id}?falha=posto-inexistente#postos",
+                                status_code=303)
 
     if len(escala.postos) <= 1:
         return _tela_escala(request, db, gestor, escala,
@@ -389,7 +390,7 @@ def participante_adicionar(
 ):
     escala = _obter_escala(db, escala_id)
     if escala is None:
-        return RedirectResponse("/gestao/escalas", status_code=303)
+        return RedirectResponse("/gestao/escalas?falha=escala-inexistente", status_code=303)
     try:
         mid = int(militar_id)
     except ValueError:
@@ -481,7 +482,7 @@ def concorrente_declarar(
     """Declara a concorrência (simétrica): vale nos dois sentidos, de uma vez."""
     escala = _obter_escala(db, escala_id)
     if escala is None:
-        return RedirectResponse("/gestao/escalas", status_code=303)
+        return RedirectResponse("/gestao/escalas?falha=escala-inexistente", status_code=303)
     try:
         outra = int(outra_id)
     except ValueError:

@@ -720,10 +720,16 @@ def escalar(
     )
     db.commit()
 
+    # Regra 7.8: o dia curto não pode chegar como um número. Sem o motivo, o
+    # gestor não distingue "falta gente na escala" de "estão todos de férias"
+    # de "a folga não fechou" — e as três pedem coisas diferentes dele.
+    faltas, total_faltas = rotacao.explicar_faltas(resultados)
+
     resultado = {
         "escala": escala, "inicio": d_ini, "fim": d_fim,
         "dias": len(resultados), "servicos": servicos, "pretendidos": pretendidos,
         "alertas": dias_com_alerta, "permutas_apagadas": permutas_perdidas,
+        "faltas": faltas, "faltas_ocultas": total_faltas - len(faltas),
         "ano": d_ini.year, "mes": d_ini.month,
     }
     return templates.TemplateResponse(request, "gestao/escalar.html", {
@@ -988,7 +994,8 @@ def registrar_permuta_web(
     except ValueError as e:
         return _tela_permuta_servico(request, db, gestor, servico, str(e), 400)
     except permuta_service.PermutaNegada as e:
-        # Regra 10.5 e guardas: a recusa é informação, não erro de sistema.
+        # Guardas de impossibilidade (10.5): a recusa é informação, não erro
+        # de sistema — e chega com o motivo.
         return _tela_permuta_servico(request, db, gestor, servico,
                                      f"Permuta negada: {e.motivo}.", 400)
 

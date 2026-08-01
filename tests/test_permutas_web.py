@@ -182,15 +182,33 @@ def test_negada_por_impedimento_mostra_o_motivo(logado, db, cenario):
     assert db.scalar(select(Permuta)) is None
 
 
-def test_negada_por_folga_minima_mostra_a_regra(logado, db, cenario):
-    """ROANA serviu na véspera: 24h < folga mínima de 48h (regra 10.5)."""
+def test_folga_minima_nao_barra_mais_a_permuta_pela_tela(logado, db, cenario):
+    """Regra 10.5 reescrita em 01/08/2026: ROANA serviu na véspera e mesmo assim
+    pode cobrir — cobrir não conta na folga de quem cobre."""
     escala, s, _, roana = cenario
     _servico(db, escala, roana, DIA - timedelta(days=1))
     db.commit()
     r = logado.post(f"/gestao/permutas/servico/{s.id}",
+                    data={"militar_substituto_id": str(roana.id)}, follow_redirects=False)
+    assert r.status_code == 303
+    assert db.scalar(select(Permuta).where(Permuta.servico_id == s.id)) is not None
+
+
+def test_negada_por_dobra_no_mesmo_dia_mostra_o_motivo(logado, db, cenario):
+    """A guarda que fica de pé: ninguém cumpre dois serviços no mesmo dia."""
+    escala, s, _, roana = cenario
+    segundo = Posto(escala_id=escala.id, ordem=2, rotulo="2º posto")
+    db.add(segundo)
+    db.flush()
+    db.add(Servico(escala_id=escala.id, posto_id=segundo.id, militar_id=roana.id,
+                   dia=DIA, cor=Cor.PRETA,
+                   inicio_dt=datetime.combine(DIA, time(8, 0)),
+                   termino_dt=datetime.combine(DIA, time(8, 0)) + timedelta(hours=24)))
+    db.commit()
+    r = logado.post(f"/gestao/permutas/servico/{s.id}",
                     data={"militar_substituto_id": str(roana.id)})
     assert r.status_code == 400
-    assert "folga mínima" in r.text
+    assert "Permuta negada" in r.text and "já está de serviço" in r.text
     assert db.scalar(select(Permuta).where(Permuta.servico_id == s.id)) is None
 
 

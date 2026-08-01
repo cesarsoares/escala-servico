@@ -168,6 +168,19 @@ motor percorre dia a dia e, em cada um:
 
 A operação é **idempotente**: rodar de novo não duplica os dias já gravados.
 
+**Quando um dia fecha com menos militares que postos** (regra 7.8), a tela não
+se limita a contar os dias: abre o bloco **Por que faltou gente** e, para cada
+dia curto, diz quantos ficaram de fora por cada motivo — sem folga (7.4),
+impedidos (7.5), sem concorrer naquela cor (3.3.1), isentos da escala (7.6) — e
+**quem sai da folga primeiro**, com a data.
+
+É a diferença entre três providências distintas: incluir mais participantes na
+escala, esperar o fim de uma dispensa, ou simplesmente aguardar a folga fechar.
+
+> Conta por motivo em vez de listar nomes: numa escala de 139 participantes, um
+> dia curto tem mais de cem preteridos, e cem nomes não são informação. Períodos
+> longos mostram os 20 primeiros dias curtos e dizem quantos ficaram de fora.
+
 ### 2.2 Lançar uma dispensa, férias, curso ou operação
 
 No **Efetivo**, ao lado da pessoa, clique em **impedimentos** — abre a ficha
@@ -205,6 +218,11 @@ A troca é **recusada com o motivo** se o substituto estiver impedido, já estiv
 de serviço naquele dia (nesta escala ou numa concorrente), não concorrer naquela
 cor (regra 3.3.1) ou se a folga mínima não couber — inclusive contra o serviço
 que ele já tem **depois** daquele dia.
+
+> **Aqui a folga mínima vale; na permuta (2.3), não.** Não é incoerência: nesta
+> tela o militar **passa a ser o escalado** do dia — ganha a folga e entra na
+> fila por esse serviço. Na permuta o escalado não muda, e quem cobre não ganha
+> folga nenhuma por cobrir.
 
 Se o serviço tem **permuta** registrada, a tela não oferece a troca: quem cobre
 está cobrindo por aquela pessoa (regra 9), e trocar o escalado por baixo tornaria
@@ -262,11 +280,23 @@ dos participantes ativos daquela escala.
 
 Permuta é **registro puro** (regra 9): anota quem cobriu o serviço. **A folga
 continua sendo de quem estava escalado** — não há retribuição automática nem
-recálculo de fila. Por isso o documento impresso mostra os dois nomes, em vez de
-trocar um pelo outro.
+recálculo de fila. Por isso a consulta e o documento impresso mostram os dois
+nomes, em vez de trocar um pelo outro: primeiro quem **assume** o serviço,
+abaixo o militar **escalado**.
 
-A permuta é **negada** se ferir a folga mínima de quem vai cobrir. A recusa vem
-com o motivo: negar é informação, não erro de sistema.
+**A folga mínima não barra a troca.** Quem cobre não ganha folga por cobrir (a
+contagem fica com o escalado), então não há folga a ferir — mesmo que ele tenha
+saído de serviço na véspera. Era isto que impedia trocas legítimas entre dias
+previstos: quem estava previsto para o dia 12 não conseguia assumir o dia 13 de
+outro. O juízo sobre o descanso de quem se ofereceu é de quem autoriza a troca.
+
+A permuta continua sendo **negada** em três casos, que são impossibilidade e não
+equidade: o substituto está **impedido** no dia (dispensa, férias, curso), já
+está **de serviço nesse mesmo dia**, ou o serviço já tem permuta registrada. A
+recusa vem com o motivo: negar é informação, não erro de sistema.
+
+> Isto vale para a **troca**. Na escalação automática a folga mínima continua
+> valendo integralmente — o sistema nunca escala alguém sem a folga da escala.
 
 ### 2.4 Feriados e cor forçada
 
@@ -462,15 +492,34 @@ Os dias de **escala vermelha** aparecem na cor da OM. A cor nunca é a única
 informação: sábado e domingo vêm escritos no cabeçalho, e o feriado tem marca
 própria.
 
+**Dia com permuta** traz dois nomes: em cima, quem **assume** o serviço; logo
+abaixo, "no lugar de" e o militar **escalado**. Os dois ficam à vista de
+propósito — a folga continua sendo de quem estava escalado (regra 9), e é o nome
+dele que a fila leva em conta.
+
 ### 3.2 O documento impresso
 
 No calendário, **Versão para impressão** (ao lado do mês). O navegador imprime
 ou salva em PDF. O endereço é aberto como o resto da consulta — dá para mandar
 o link a quem precise do documento.
 
+**Imprimir um período qualquer.** O documento abre no mês cheio, mas os campos
+**De … até** no alto da página aceitam qualquer intervalo — é assim que se
+imprime a previsão de 15 de agosto a 15 de setembro, que não cabe num mês. O
+período fica no endereço, então o link pode ser guardado nos favoritos ou
+enviado a quem precise do mesmo documento. Para voltar ao mês, clique em
+**mês cheio**.
+
+- Atravessando a virada do mês, a coluna do dia passa a mostrar **dia/mês**
+  (`15/08`, `15/09`) — sem isso, "15" apareceria duas vezes sem dizer qual é qual.
+- O período é limitado a **366 dias**. Para mais que isso, imprima em partes.
+- Período recusado (data final antes da inicial, data inválida) **diz o motivo**
+  logo abaixo dos campos e mostra o mês enquanto isso.
+
 A folha de impressão é preparada para **impressora monocromática**: o dia
 vermelho é marcado pela letra **V** (e `*` para feriado), não apenas por cor.
-Havendo permuta, o documento mostra o escalado **e** quem cobre.
+Havendo permuta, o documento traz **os dois nomes, na mesma ordem da consulta**:
+quem assume o serviço e, abaixo, o militar escalado.
 
 ### 3.3 O painel
 
@@ -487,7 +536,10 @@ entrar de serviço vem antes de qualquer estatística:
    menos militares que postos (regra 7.8) e escala com menos participantes que
    vagas — esta última **por cor**, quando alguém concorre só numa (regra 3.3.1).
 4. **Serviço de hoje** e **Amanhã** — quem serve, com a permuta ao lado. Se
-   amanhã ainda não está fechado, mostra quem o motor escalaria.
+   amanhã ainda não está fechado, mostra quem o motor escalaria. Escala que roda
+   amanhã **sem ninguém disponível** aparece na lista, destacada e com o motivo
+   (e a data em que o primeiro sai da folga) — é a véspera em que ainda dá tempo
+   de agir. Só ficam de fora as escalas que **não rodam** naquele dia.
 5. **Completude do cadastro** — quantos ainda estão sem data de promoção, sem
    data de nascimento e quantas praças estão sem número de antiguidade. Sem
    esses campos o desempate roda sem os critérios que a regra manda.

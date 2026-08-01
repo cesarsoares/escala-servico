@@ -23,7 +23,7 @@ from app.domain.calendario import classificar_dia
 from app.domain.models import Cor
 from app.models.escala import Escala
 from app.models.militar import Militar
-from app.models.servico import Servico
+from app.models.servico import Permuta, Servico
 from app.services import calendario_service, publicacao
 from app.web import ANO_MAX, ANO_MIN, templates
 from app.web.gestao import NaoLogado, router as gestao_router
@@ -191,11 +191,33 @@ def index(
         .options(joinedload(Servico.militar).joinedload(Militar.posto_graduacao))
         .order_by(Servico.dia, Servico.posto_id)
     ).all()
-    por_dia: dict[date, list[dict[str, str]]] = {}
+
+    # Permutas do mês. Quem lê a consulta quer saber quem VAI ao serviço, então
+    # o template põe o substituto primeiro e o escalado logo abaixo — mas os
+    # dois aparecem: a folga continua sendo do escalado (regra 9), e sumir com o
+    # nome dele faria o documento mentir sobre de quem é o serviço.
+    # `Permuta` não tem relação para o militar; carrego à parte, como publicacao.
+    ids = [s.id for s in servicos]
+    permutas = {
+        p.servico_id: p.militar_substituto_id
+        for p in (db.scalars(select(Permuta).where(Permuta.servico_id.in_(ids))) if ids else [])
+    }
+    substitutos = {
+        m.id: m for m in (db.scalars(
+            select(Militar)
+            .options(joinedload(Militar.posto_graduacao))
+            .where(Militar.id.in_(set(permutas.values())))
+        ) if permutas else [])
+    }
+
+    por_dia: dict[date, list[dict[str, str | None]]] = {}
     for s in servicos:
+        sub = substitutos.get(permutas.get(s.id))
         por_dia.setdefault(s.dia, []).append({
             "posto": s.militar.posto_graduacao.sigla,
             "nome": s.militar.nome_guerra,
+            "sub_posto": sub.posto_graduacao.sigla if sub else None,
+            "sub_nome": sub.nome_guerra if sub else None,
         })
 
     # cor de cada dia (calendário: feriados + overrides)
@@ -234,31 +256,85 @@ def index(
     })
 
 
+# Teto do período de impressão. A página é ABERTA (regra 13.1): sem teto,
+# `?inicio=1900-01-01&fim=2200-12-31` monta uma tabela de 110 mil linhas a cada
+# pedido. Um ano cobre com folga o uso real (o brigada imprime de 15 em 15 dias).
+MAX_DIAS_IMPRESSAO = 366
+
+
+def _data_da_url(texto: str | None) -> date | None:
+    """Data ISO vinda da querystring; ilegível ou fora da faixa vira None.
+
+    A URL é aberta e editável à mão — data inválida tem de virar mensagem na
+    tela (o motivo da recusa), nunca 500 nem 422 em branco.
+    """
+    try:
+        d = date.fromisoformat((texto or "").strip())
+    except ValueError:
+        return None
+    return d if ANO_MIN <= d.year <= ANO_MAX else None
+
+
 @app.get("/escalas/{escala_id}/impressao", response_class=HTMLResponse)
 def impressao(
     escala_id: int,
     request: Request,
     ano: int | None = Query(None, ge=ANO_MIN, le=ANO_MAX),
     mes: int | None = Query(None, ge=1, le=12),
+    inicio: str | None = Query(None),
+    fim: str | None = Query(None),
     db: Session = Depends(get_db),
 ):
-    """Documento da escala do mês, pronto para imprimir (regra 12).
+    """Documento da escala, pronto para imprimir (regra 12).
 
     Aberta como o resto da consulta (regra 13.1) — é o documento publicado. O
     navegador imprime ou salva em PDF; o WeasyPrint usará este mesmo template.
+
+    Dois jeitos de dizer o período: `?ano=&mes=` (o mês cheio, que é o default e
+    o que o calendário liga) ou `?inicio=&fim=` em datas ISO, que é o intervalo
+    livre — a previsão de 15/ago a 15/set não cabia num mês. O intervalo tem
+    precedência; período recusado explica o motivo e cai no mês.
     """
     escala = db.scalar(
         select(Escala).options(selectinload(Escala.postos)).where(Escala.id == escala_id)
     )
     if escala is None:
         raise HTTPException(status_code=404, detail="escala não encontrada")
-    if ano is None or mes is None:
-        ano, mes = _mes_com_dados(db, escala.id)
+
+    d_ini, d_fim = _data_da_url(inicio), _data_da_url(fim)
+    erro_periodo = None
+    if inicio or fim:
+        if d_ini is None or d_fim is None:
+            erro_periodo = ("Informe as duas datas do período (inicial e final) "
+                            f"em anos entre {ANO_MIN} e {ANO_MAX}.")
+        elif d_fim < d_ini:
+            erro_periodo = "A data final é anterior à inicial."
+        elif (d_fim - d_ini).days + 1 > MAX_DIAS_IMPRESSAO:
+            erro_periodo = (f"O período pedido passa de {MAX_DIAS_IMPRESSAO} dias. "
+                            "Imprima em partes.")
+
+    if erro_periodo is None and d_ini and d_fim:
+        p_ini, p_fim = d_ini, d_fim
+    else:
+        if ano is None or mes is None:
+            ano, mes = _mes_com_dados(db, escala.id)
+        p_ini, p_fim = publicacao.periodo_do_mes(ano, mes)
 
     return templates.TemplateResponse(request, "impressao.html", {
         "escala": escala,
-        "ano": ano, "mes": mes, "mes_nome": MESES[mes],
-        "dias": publicacao.documento(db, escala, ano, mes),
+        # Voltar ao calendário: ele é mensal, então cai no mês em que o período começa.
+        "ano": p_ini.year, "mes": p_ini.month,
+        # Campos do formulário: recusado o período, voltam com o que foi
+        # DIGITADO (e não com o mês em que o documento caiu), senão o gestor
+        # precisa redigitar as duas datas para corrigir uma.
+        "campo_inicio": (inicio or "") if erro_periodo else p_ini.isoformat(),
+        "campo_fim": (fim or "") if erro_periodo else p_fim.isoformat(),
+        "periodo": publicacao.rotulo_periodo(p_ini, p_fim),
+        "erro_periodo": erro_periodo,
+        "dias": publicacao.documento(db, escala, p_ini, p_fim),
+        # Período que atravessa a virada do mês: a coluna do dia precisa do mês
+        # junto, senão "15" aparece duas vezes sem dizer qual é qual.
+        "mostra_mes": (p_ini.year, p_ini.month) != (p_fim.year, p_fim.month),
         # Com um posto só, a coluna repetiria o mesmo rótulo em todas as linhas.
         "mostra_postos": len(escala.postos) > 1,
         "emitido_em": date.today(),

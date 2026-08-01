@@ -140,8 +140,30 @@ AVISOS = {
 }
 templates.env.globals["AVISOS"] = AVISOS
 
+# --- Recusa que chega por redirecionamento -----------------------------------
+# Espelho do AVISOS para o que NÃO deu certo, em `?falha=<chave>`. Existe porque
+# a alternativa — mandar o gestor de volta para a lista em silêncio — o deixa
+# achando que clicou errado, quando na verdade o alvo não existe mais (link
+# velho, aba aberta desde ontem, registro excluído por outro gestor).
+#
+# ⚠️ É DICIONÁRIO, e não texto na URL, pela mesma razão da tela de conflitos: o
+# motivo é escrito aqui, não por quem monta o endereço — senão qualquer link
+# passa a imprimir o que quiser numa tela de gestão. Chave desconhecida não
+# exibe nada.
+RECUSAS = {
+    "escala-inexistente": "Essa escala não existe mais — pode ter sido excluída. "
+                          "A lista abaixo é a atual.",
+    "posto-inexistente": "Esse posto não existe mais nesta escala.",
+}
+templates.env.globals["RECUSAS"] = RECUSAS
+
 # Faixa aceita em ?ano= nas telas de mês. Sem isso, ano=0 estoura em
 # date(ano, mes, 1) e devolve 500 — inclusive na consulta aberta (regra 13.1).
 # Mora aqui pelo mesmo motivo dos templates: main.py e web/gestao.py precisam.
 ANO_MIN = 1900
 ANO_MAX = 2200
+
+# Os campos de data dos formulários usam a mesma faixa (atributos min/max), para
+# o navegador recusar antes de o servidor precisar explicar.
+templates.env.globals["ano_min"] = ANO_MIN
+templates.env.globals["ano_max"] = ANO_MAX

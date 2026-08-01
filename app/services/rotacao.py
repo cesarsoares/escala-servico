@@ -9,7 +9,7 @@ chama o motor e persiste o retrato (regra 6/7).
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, timedelta
 
 from sqlalchemy import select
@@ -17,7 +17,9 @@ from sqlalchemy.orm import Session
 
 from app.domain.calendario import classificar_dia
 from app.domain.models import Cor, Militar as MilitarDom
-from app.domain.motor import proximos
+from app.domain.motor import (
+    MOTIVO_COR, MOTIVO_FOLGA, MOTIVO_IMPEDIDO, MOTIVO_INATIVO, Preterido, selecionar,
+)
 from app.models.escala import Escala as EscalaORM, Posto
 from app.models.servico import Servico
 from app.services import calendario_service, mapeamento
@@ -36,6 +38,77 @@ class ResultadoDia:
     # Difere de len(escolhidos) quando o dia já estava fechado: a gravação é
     # idempotente, então re-escalar sem 'regravar' cria zero.
     servicos_gravados: int | None = None
+    # Por que cada participante ficou de fora (regra 7.8): sem isto a tela só
+    # sabia dizer que o dia ficou curto, nunca de que adiantava fazer o quê.
+    preteridos: list[Preterido] = field(default_factory=list)
+
+
+# Como cada motivo aparece na tela. Fica aqui, e não no template, porque cada
+# frase cita o número da regra — texto que precisa acompanhar a regra quando ela
+# muda, e que o Jinja não teria como manter honesto.
+# As frases vêm precedidas de um número ("2 ...") e por isso são construções
+# invariáveis: "2 impedido no dia" não é português, e concordar em código
+# significaria carregar plural de cada uma.
+ROTULO_MOTIVO = {
+    MOTIVO_IMPEDIDO: "com impedimento no dia — dispensa, férias, curso (regra 7.5)",
+    MOTIVO_FOLGA: "sem a folga mínima cumprida (regra 7.4)",
+    MOTIVO_COR: "sem concorrer nesta cor (regra 3.3.1)",
+    MOTIVO_INATIVO: "com a participação isenta nesta escala (regra 7.6)",
+}
+# Ordem em que os motivos são listados: primeiro o que muda amanhã (folga),
+# depois o que depende de um ato do gestor, por último o que é permanente.
+ORDEM_MOTIVO = [MOTIVO_FOLGA, MOTIVO_IMPEDIDO, MOTIVO_COR, MOTIVO_INATIVO]
+
+
+@dataclass
+class FaltaNoDia:
+    """Um dia que fechou com menos militares que postos, e por quê (regra 7.8)."""
+    dia: date
+    cor: Cor
+    postos: int
+    escalados: int
+    por_motivo: list[tuple[str, int]]              # (frase do motivo, quantos)
+    liberam_primeiro: list[tuple[MilitarDom, date]]  # quem sai da folga antes
+
+    @property
+    def vagas_abertas(self) -> int:
+        return self.postos - self.escalados
+
+
+def explicar_faltas(
+    resultados: list[ResultadoDia], limite: int = 20,
+) -> tuple[list[FaltaNoDia], int]:
+    """Traduz os dias curtos num porquê legível. Devolve (lista, total de dias).
+
+    Conta por motivo em vez de listar nomes: numa escala de 139 participantes,
+    um dia curto tem 130 preteridos, e 130 nomes não são informação. O que é
+    informação: quantos caem em cada motivo e **quem sai da folga primeiro** —
+    a única linha que responde "então o que eu faço?".
+
+    `limite` corta a lista exibida (um ano curto renderia 365 blocos); o total
+    volta junto para a tela poder dizer quantos ficaram de fora da lista.
+    """
+    curtos = [r for r in resultados if r.efetivo_insuficiente]
+    saida = []
+    for r in curtos[:limite]:
+        contagem: dict[str, int] = {}
+        for p in r.preteridos:
+            contagem[p.motivo] = contagem.get(p.motivo, 0) + 1
+        por_motivo = [
+            (ROTULO_MOTIVO[m], contagem[m]) for m in ORDEM_MOTIVO if m in contagem
+        ]
+        # Quem volta antes; a data é o que o gestor compara com o dia da falta.
+        na_folga = sorted(
+            (p for p in r.preteridos if p.livre_em is not None),
+            key=lambda p: p.livre_em,
+        )
+        saida.append(FaltaNoDia(
+            dia=r.dia, cor=r.cor,
+            postos=r.postos_solicitados, escalados=len(r.escolhidos),
+            por_motivo=por_motivo,
+            liberam_primeiro=[(p.militar, p.livre_em.date()) for p in na_folga[:3]],
+        ))
+    return saida, len(curtos)
 
 
 def escala_roda_cor(escala, cor: Cor) -> bool:
@@ -83,8 +156,8 @@ def escalar_dia(
     impedimentos = mapeamento.impedimentos_no_dia(session, ids, dia)
     ultimo_termino = mapeamento.ultimo_termino_por_militar(session, escala, ids, antes_de_dia=dia)
 
-    escolhidos = proximos(escala, parts, cor, dia, impedimentos, ultimo_termino)
-    militares = [p.militar for p in escolhidos]
+    sel = selecionar(escala, parts, cor, dia, impedimentos, ultimo_termino)
+    militares = [p.militar for p in sel.escolhidos]
     return ResultadoDia(
         escala_id=escala_id,
         dia=dia,
@@ -92,6 +165,7 @@ def escalar_dia(
         escolhidos=militares,
         postos_solicitados=escala.postos,
         efetivo_insuficiente=len(militares) < escala.postos,
+        preteridos=sel.preteridos,
     )
 
 

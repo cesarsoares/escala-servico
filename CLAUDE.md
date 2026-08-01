@@ -1172,6 +1172,130 @@ Ela já estourou duas vezes (ver seção dos ajustes de 26/07). Chega-se por:
 painel → Conflitos; Escalar → Conflitos e Serviços lançados à mão; tela de
 impedimentos → Conflitos; login → Esqueci a senha.
 
+## Impressão por período + permuta na consulta (feito — 2026-08-01)
+
+Itens 5 e 3 do bloco novo do `notas.txt`. Testes em `tests/test_ajustes_0801.py`
+(o item 1 saiu junto; o 4 tem arquivo próprio, `tests/test_motivo_da_recusa.py`).
+Do mesmo bloco, o item 1 saiu logo depois (seção própria abaixo); ficam em aberto
+o 2 (reajuste automático — decidido, ver abaixo) e o 4 (motivo em toda recusa,
+que já vale na permuta e nos conflitos e falta varrer nas demais telas).
+
+**5. `?inicio=&fim=` na impressão** (`publicacao.documento` passou a receber um
+INTERVALO, não `ano, mes`). O brigada imprime de 15 em 15 dias, e 15/ago a
+15/set não cabe num mês.
+
+- O mês cheio continua sendo o default e o que o calendário liga: `periodo_do_mes`
+  + `rotulo_periodo` (mês por extenso quando o intervalo é o mês exato, as duas
+  datas fora disso — "agosto" não descreve um documento que vai até 15/set).
+- ⚠️ **Teto de `MAX_DIAS_IMPRESSAO` (366).** A página é ABERTA (13.1):
+  `?inicio=1900-01-01&fim=2200-12-31` montaria uma tabela de 110 mil linhas por
+  pedido. Mesma razão da faixa `ANO_MIN..ANO_MAX` que já existia em `?ano=`.
+- **Data ilegível não é 422 nem 500**: `_data_da_url` devolve None e a tela
+  explica o motivo (item 4 do mesmo bloco) caindo no mês — recusar não pode
+  deixar o gestor sem documento nenhum. O formulário volta com o que foi
+  DIGITADO, não com o mês em que caiu (convenção de 26/07).
+- ⚠️ **Atravessando a virada do mês, a coluna do dia mostra `dia/mês`**
+  (`mostra_mes`). Sem isso o documento traz "15" duas vezes sem dizer qual é
+  qual — é o tipo de erro que só aparece no papel, já publicado.
+
+**3. Permuta na consulta: quem ASSUME o serviço primeiro**, o escalado logo
+abaixo ("no lugar de"). Vale nos DOIS lugares — consulta e documento impresso
+(decisão do usuário): mesma permuta em ordens diferentes na tela e no papel é
+erro de leitura garantido. Os dois nomes continuam aparecendo, porque a folga é
+de quem estava escalado (regra 9) e é o nome dele que a fila usa.
+
+- A consulta passou a carregar `Permuta` (não carregava): mesmo par de consultas
+  de `publicacao`, porque `Permuta` não tem relação para o militar.
+- ⚠️ **Na célula do calendário a segunda linha QUEBRA em vez de cortar.** Com o
+  `text-overflow:ellipsis` herdado de `.mil`, saía "no lugar de Cap COS…" —
+  reticência escondendo justamente o nome que a linha existe para mostrar.
+  **Achado na conferência visual, não pelos testes** (a suíte via o texto no
+  HTML; o corte é do CSS). Vale repetir a receita da seção "Conferir o visual
+  sem servidor" a cada entrega de tela.
+
+## ⚠️ A folga mínima saiu da permuta (regra 10.5 reescrita — 2026-08-01)
+
+Item 1 do bloco novo. **Mudança de REGRA, decidida pelo usuário**, e a primeira
+que revoga uma barreira existente — está escrita no `docs/` (10.5), não só no
+código.
+
+**Cobrir não conta na folga de quem cobre.** A contagem fica com o substituído
+(10.2), então não há folga a ferir: a permuta é **aceita sempre**. A barreira
+antiga recusava trocas legítimas entre dias **previstos** — o caso que o Brigada
+relatou: quem está previsto para o dia 12 não conseguia assumir o dia 13 de
+outro, porque o sistema contava contra ele o serviço do dia 12 que, feita a
+troca, ele não cumpre.
+
+- Continuam negando, e são **impossibilidade e não equidade**: substituto
+  impedido no dia (7.5), já de serviço no mesmo dia (escala ou concorrente),
+  substituto = escalado, serviço já permutado.
+- **Consequência aceita** (perguntada e respondida): o sistema não impede mais
+  que o mesmo militar cumpra dias seguidos por efeito de uma troca. Quem julga o
+  descanso é quem autoriza.
+- ⚠️ **NADA MAIS AFROUXOU, e isso é o que um leitor apressado quebra:** o motor
+  (7.4) e `conflitos.substituir` continuam exigindo a folga integralmente. Não é
+  contradição — na permuta o escalado NÃO muda e a folga fica com ele; nos
+  outros dois o militar **vira o escalado**, ganha a folga e entra na fila por
+  aquele serviço. O comentário está no ponto da checagem em `conflitos.py`, e
+  `tests/test_ajustes_0801.py` guarda a fronteira nos dois sentidos.
+
+## Toda restrição diz o motivo (feito — 2026-08-01)
+
+Item 4. O pedido chegou pelo exemplo da permuta, que **já dizia** o motivo; a
+restrição realmente muda era outra, e é a que mais custa: **o dia que fecha com
+menos militares que postos** (7.8). A tela de Escalar dava "dias com efetivo
+insuficiente: 3" e parava aí — e faltar gente, estarem todos de férias e a folga
+não ter fechado pedem três providências diferentes do gestor.
+
+**O motor sempre soube o porquê; só jogava fora dentro do laço.**
+`motor.selecionar` devolve `Selecao(escolhidos, preteridos)` com o motivo de
+cada ausência (`MOTIVO_FOLGA/IMPEDIDO/COR/INATIVO`) e, na folga, **a data em que
+o militar libera** — é o que transforma "sem folga" em algo acionável.
+`proximos` virou açúcar sobre ela, então a regra continua num lugar só.
+
+- ⚠️ **`preteridos` só é completo quando o dia NÃO fecha**: com os postos cheios
+  o laço para, e quem estava adiante nunca foi examinado. É o certo — quem está
+  abaixo da linha de corte não foi recusado, só não chegou a vez dele.
+- `rotacao.explicar_faltas` **conta por motivo em vez de listar nomes**: numa
+  escala de 139 participantes, um dia curto tem 130 preteridos, e 130 nomes não
+  são informação. O que é: a contagem e **quem sai da folga primeiro**.
+- Corta em 20 dias (um ano curto renderizaria 365 blocos) e devolve o total,
+  para a tela dizer quantos ficaram de fora.
+- As frases dos motivos moram em `ROTULO_MOTIVO` (serviço), **não no template**:
+  cada uma cita o número da regra e precisa acompanhá-la quando ela mudar.
+
+**O achado grave foi no painel, e não era silêncio — era afirmação falsa.**
+`painel.proximos_da_fila` descartava a escala em que ninguém podia entrar junto
+com as que não rodam no dia, e a tela escrevia **"Nenhuma escala roda amanhã"**.
+Some exatamente a véspera em que ainda dá tempo de agir. O critério que separa
+os dois casos é `efetivo_insuficiente`: sem escolhidos E sem alerta = a escala
+não roda nesta cor (4.5), aí não há falta nenhuma.
+
+**Recusa por redirecionamento** também deixou de ser muda: `RECUSAS` + `?falha=`
+em `app/web/__init__.py`, espelho do `AVISOS`/`?ok=`, renderizado no
+`base_gestao.html`. É **dicionário e não texto na URL** pela mesma razão da tela
+de conflitos — senão qualquer link imprime o que quiser numa tela de gestão; e
+chave desconhecida não exibe nada.
+
+## Item 2 (reajuste automático) — decidido, ainda NÃO implementado
+
+O que o usuário respondeu em 01/08, e que remove a objeção registrada na seção
+das 3 demandas do Brigada:
+
+- **A previsão não é documento oficial** — é para as pessoas se planejarem. O
+  oficial é o **boletim**, que publica o serviço do **dia seguinte** e, na
+  quinta, o bloco **sexta-sábado-domingo-segunda**. Logo, refazer a escala do
+  dia em diante não invalida nada publicado, que era o receio de 30/07.
+- **Gatilhos: só o que muda a fila** (dispensa/impedimento, serviço lançado ou
+  corrigido à mão, isenção, desativação). **Permuta não dispara** — pela regra 9
+  e pela 10.5 acima, ela não mexe na fila; disparar mudaria os dias seguintes
+  sem que nada tivesse mudado.
+- **Dia já publicado: reajusta e AVISA quais.** A tela destaca os dias alterados
+  que caem na janela já publicada, para o gestor saber que precisam de
+  aditamento. O sistema não decide por ele nem esconde a consequência.
+- Em aberto para a implementação: o destino das **permutas dos dias refeitos**
+  (o "regravar" as apaga por CASCADE — achado 1 do review de 25/07).
+
 ## Próximos passos sugeridos
 
 1. **WeasyPrint gerando o PDF pelo servidor** — já está instalado na imagem

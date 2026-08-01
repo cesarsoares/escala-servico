@@ -25,5 +25,9 @@
    Antes disso, só o ERRO falava: acertar era silencioso. #}
 {% set ok = AVISOS.get(request.query_params.get('ok')) %}
 {% if ok %}<p class="sucesso" role="status">{{ ok }}</p>{% endif %}
+{# E o contrário: a ação não aconteceu e o gestor caiu aqui por redirecionamento.
+   Sem isto ele volta para a lista sem uma palavra, achando que errou o clique. #}
+{% set falha = RECUSAS.get(request.query_params.get('falha')) %}
+{% if falha %}<p class="erro" role="alert">{{ falha }}</p>{% endif %}
 {% block gestao %}{% endblock %}
 {% endblock %}

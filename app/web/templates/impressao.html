@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ escala.nome }} — {{ mes_nome }}/{{ ano }}</title>
+  <title>{{ escala.nome }} — {{ periodo }}</title>
   <link rel="stylesheet" href="/static/impressao.css">
 </head>
 <body>
@@ -14,10 +14,23 @@
   <button type="button" onclick="window.print()">Imprimir / salvar em PDF</button>
 </div>
 
+{# Período livre: o mês cheio é o default, mas a previsão sai de 15 em 15 dias e
+   atravessa a virada do mês. Formulário GET — o período fica na URL, então o
+   documento é reproduzível e pode ser guardado nos favoritos. #}
+<form class="acoes periodo-form" method="get">
+  <label>De <input type="date" name="inicio" value="{{ campo_inicio }}"
+                   min="{{ ano_min }}-01-01" max="{{ ano_max }}-12-31" required></label>
+  <label>até <input type="date" name="fim" value="{{ campo_fim }}"
+                    min="{{ ano_min }}-01-01" max="{{ ano_max }}-12-31" required></label>
+  <button type="submit">Ver o período</button>
+  <a href="/escalas/{{ escala.id }}/impressao?ano={{ ano }}&mes={{ mes }}">mês cheio</a>
+  {% if erro_periodo %}<span class="erro-periodo">{{ erro_periodo }}</span>{% endif %}
+</form>
+
 <article class="documento">
   <header>
     <h1>Escala de serviço — {{ escala.nome }}</h1>
-    <p class="periodo">{{ mes_nome|capitalize }} de {{ ano }}</p>
+    <p class="periodo">{{ periodo|capitalize }}</p>
     <p class="janela">
       Serviço das {{ '%02d:%02d'|format(escala.inicio_servico.hour, escala.inicio_servico.minute) }}
       por {{ escala.duracao_horas }}h.
@@ -38,16 +51,20 @@
         {% for p in d.postos %}
         <tr class="{{ 'vermelha' if d.cor == 'vermelha' else 'preta' }}{{ ' primeiro' if loop.first }}">
           {% if loop.first %}
-            <td class="c-dia" rowspan="{{ d.postos|length }}">{{ '%02d'|format(d.dia.day) }}</td>
+            <td class="c-dia" rowspan="{{ d.postos|length }}">{{ '%02d'|format(d.dia.day) -}}
+              {%- if mostra_mes %}/{{ '%02d'|format(d.dia.month) }}{% endif %}</td>
             <td class="c-sem" rowspan="{{ d.postos|length }}">{{ d.semana }}</td>
             <td class="c-cor" rowspan="{{ d.postos|length }}">
               {{ 'V' if d.cor == 'vermelha' else 'P' }}{% if d.feriado %}*{% endif %}
             </td>
           {% endif %}
           {% if mostra_postos %}<td class="c-posto">{{ p.rotulo }}</td>{% endif %}
+          {# Havendo permuta, quem VAI ao serviço vem primeiro e o escalado logo
+             abaixo. Os dois continuam no documento: a folga é do escalado
+             (regra 9), a permuta é registro puro. #}
           <td>
-            {{ p.militar }}
-            {% if p.substituto %}<span class="permuta">permuta: {{ p.substituto }}</span>{% endif %}
+            {{ p.substituto or p.militar }}
+            {% if p.substituto %}<span class="permuta">no lugar de {{ p.militar }}</span>{% endif %}
           </td>
         </tr>
         {% endfor %}
@@ -57,10 +74,11 @@
 
   <p class="legenda">
     P = dia preta (útil) · V = dia vermelha (sábado, domingo ou feriado) · * = feriado.
-    Na permuta, a folga permanece com o militar escalado (regra 9).
+    Havendo permuta, o primeiro nome é quem assume o serviço e o segundo é o
+    militar escalado — a folga permanece com ele (regra 9).
   </p>
   {% else %}
-  <p class="vazio">Nenhum serviço escalado neste mês.</p>
+  <p class="vazio">Nenhum serviço escalado neste período.</p>
   {% endif %}
 
   <footer>

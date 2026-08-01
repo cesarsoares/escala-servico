@@ -227,18 +227,27 @@ def proximos_da_fila(db: Session, dia: date, quantos: int = 3) -> list[dict]:
 
     Roda a mesma função da escalação real (`rotacao.escalar_dia`), então a
     resposta não é uma segunda implementação da regra: é a regra.
+
+    ⚠️ Escala em que NINGUÉM pode entrar continua na lista, com o motivo. Antes
+    ela era descartada junto com as que não rodam no dia, e o painel dizia
+    "nenhuma escala roda amanhã" — que é falso e esconde exatamente a véspera
+    que precisa de providência.
     """
     saida = []
     for escala in db.scalars(
         select(Escala).where(Escala.ativa.is_(True)).order_by(Escala.nome)
     ):
         resultado = rotacao.escalar_dia(db, escala.id, dia)
-        if not resultado.escolhidos:
+        # Sem ninguém E sem alerta = a escala não roda nesta cor (regra 4.5).
+        # Aí não há o que mostrar: o Museu numa terça não está "descoberto".
+        if not resultado.escolhidos and not resultado.efetivo_insuficiente:
             continue
+        faltas, _ = rotacao.explicar_faltas([resultado])
         saida.append({
             "escala": escala.nome, "escala_id": escala.id, "dia": dia,
             "cor": resultado.cor,
             "militares": [f"{m.posto} {m.nome_guerra}" for m in resultado.escolhidos[:quantos]],
+            "falta": faltas[0] if faltas else None,
         })
     return saida
 

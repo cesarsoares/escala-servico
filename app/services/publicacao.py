@@ -7,6 +7,13 @@ mesmo caminho — o documento é o mesmo, muda só o renderizador.
 Mostra QUEM SERVE no dia: o escalado e, havendo permuta, quem o cobre. A folga
 continua sendo do escalado (regra 9) — a permuta é registro puro, não muda a
 fila; por isso o documento exibe os dois nomes em vez de trocar um pelo outro.
+Na apresentação, quem vai ao serviço vem primeiro e o escalado logo abaixo
+("no lugar de"): quem lê o documento no dia precisa achar de imediato quem
+assume. A ordem é a MESMA da consulta — tela e papel divergindo na mesma
+permuta é erro de leitura garantido.
+
+O período é um intervalo de datas, não um mês: o brigada imprime de 15 em 15
+dias, e a previsão de 15/ago a 15/set atravessa a virada do mês.
 """
 from __future__ import annotations
 
@@ -49,11 +56,30 @@ def _nome(m: Militar) -> str:
     return f"{m.posto_graduacao.sigla} {m.nome_guerra} ({m.om.sigla})"
 
 
-def documento(db: Session, escala: Escala, ano: int, mes: int) -> list[LinhaDia]:
-    """Dias escalados do mês, em ordem. Dia sem serviço não entra (uma escala só
-    vermelha imprimiria três semanas de linhas vazias)."""
-    primeiro = date(ano, mes, 1)
-    ultimo = date(ano, mes, calendar.monthrange(ano, mes)[1])
+def periodo_do_mes(ano: int, mes: int) -> tuple[date, date]:
+    """Primeiro e último dia do mês — o período default do documento."""
+    return date(ano, mes, 1), date(ano, mes, calendar.monthrange(ano, mes)[1])
+
+
+def rotulo_periodo(inicio: date, fim: date) -> str:
+    """Como o período se apresenta no cabeçalho do documento.
+
+    Mês cheio continua saindo por extenso ("agosto de 2026"), que é o caso
+    comum; qualquer outro intervalo sai com as duas datas, porque "agosto" não
+    descreveria um documento que vai de 15/ago a 15/set.
+    """
+    if (inicio, fim) == periodo_do_mes(inicio.year, inicio.month):
+        return f"{MESES[inicio.month]} de {inicio.year}"
+    return f"{inicio.strftime('%d/%m/%Y')} a {fim.strftime('%d/%m/%Y')}"
+
+
+def documento(db: Session, escala: Escala, inicio: date, fim: date) -> list[LinhaDia]:
+    """Dias escalados do período, em ordem. Dia sem serviço não entra (uma escala
+    só vermelha imprimiria três semanas de linhas vazias).
+
+    O período é fechado nas duas pontas (inclui `inicio` e `fim`).
+    """
+    primeiro, ultimo = inicio, fim
 
     servicos = db.scalars(
         select(Servico)

@@ -192,10 +192,22 @@
   <thead><tr><th>Escala</th><th>Cor</th><th>Próximos na fila (mais folgados)</th></tr></thead>
   <tbody>
   {% for p in proximos %}
-    <tr>
+    <tr class="{{ 'atencao' if p.falta }}">
       <td>{{ p.escala }}</td>
       <td><span class="tag cor-{{ p.cor.value }}">{{ p.cor.value }}</span></td>
-      <td>{{ p.militares|join(' · ') }}</td>
+      <td>
+        {{ p.militares|join(' · ') }}
+        {%- if p.falta %}
+          {# Vaga sem candidato: o motivo aqui é o que dá tempo de agir na
+             véspera. Sem ele o painel só omitiria a escala. #}
+          <span class="fraco">{{ p.falta.vagas_abertas }} vaga(s) sem candidato —</span>
+          {% for frase, quantos in p.falta.por_motivo %}{{ quantos }} {{ frase }}{{ "; " if not loop.last }}{% endfor %}
+          {%- if p.falta.liberam_primeiro %}
+          <span class="fraco">· sai da folga primeiro:
+            {% for m, quando in p.falta.liberam_primeiro %}{{ m.posto }} {{ m.nome_guerra }} ({{ quando.strftime('%d/%m') }}){{ ", " if not loop.last }}{% endfor %}</span>
+          {%- endif %}
+        {%- endif %}
+      </td>
     </tr>
   {% endfor %}
   </tbody>

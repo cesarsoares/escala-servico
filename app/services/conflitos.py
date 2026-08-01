@@ -305,6 +305,11 @@ def _garantir_elegivel(db: Session, servico: Servico, militar_id: int) -> None:
     if dobra is not None:
         raise SubstituicaoNegada("o substituto já está de serviço nesse dia")
 
+    # ⚠️ A folga mínima CONTINUA valendo aqui, e não é contradição com a 10.5
+    # (que a tirou da permuta em 01/08/2026): lá o escalado não muda e a folga
+    # fica com ele — quem cobre não ganha nada e não deve nada. Aqui o substituto
+    # PASSA A SER o escalado do dia: ganha a folga, entra na fila por este
+    # serviço, e sai no documento como responsável. É escalação, não registro.
     ultimo = mapeamento.ultimo_termino_por_militar(
         db, escala, [militar_id], antes_de_dia=servico.dia).get(militar_id)
     if not respeita_folga_minima(ultimo, servico.inicio_dt, escala.folga_minima_horas):

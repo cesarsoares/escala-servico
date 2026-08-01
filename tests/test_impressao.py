@@ -128,15 +128,21 @@ def test_feriado_recebe_asterisco(client, db):
 
 
 def test_permuta_mostra_substituto_sem_tirar_o_escalado(client, db):
-    """Regra 9: quem cobre aparece, mas o serviço (e a folga) continua do escalado."""
+    """Regra 9: quem cobre aparece, mas o serviço (e a folga) continua do escalado.
+
+    Pedido do brigada (01/08): o substituto vem PRIMEIRO — quem lê o documento
+    no dia precisa achar de imediato quem assume — e o escalado logo abaixo.
+    """
     e = _escala(db)
     silva, roana = _militar(db, "SILVA"), _militar(db, "ROANA")
     s = _servico(db, e, silva, date(2026, 8, 3))
     db.add(Permuta(servico_id=s.id, militar_substituto_id=roana.id))
     db.commit()
     texto = client.get(f"/escalas/{e.id}/impressao?ano=2026&mes=8").text
-    assert "Cap SILVA (QG)" in texto
-    assert "permuta: Cap ROANA (QG)" in texto
+    assert "Cap ROANA (QG)" in texto
+    assert "no lugar de Cap SILVA (QG)" in texto
+    # ordem na célula: substituto acima, escalado abaixo
+    assert texto.index("Cap ROANA (QG)") < texto.index("no lugar de Cap SILVA (QG)")
 
 
 def test_posto_unico_nao_mostra_a_coluna_posto(client, cenario):

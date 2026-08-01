@@ -219,6 +219,15 @@ body { transition:padding-left .35s ease; }
 /* Posto/graduação antes do nome: corpo menor e peso normal, para caber junto
    sem competir com o nome — a célula comporta 12 postos na escala da guarda. */
 .dia .mil .pg { font-size:11.5px; font-weight:500; color:var(--tinta-2); }
+/* Permuta: o substituto ocupa a linha do escalado e o escalado desce para esta
+   segunda linha, em corpo menor — quem consulta quer achar primeiro quem vai
+   ao serviço, mas o nome do escalado não pode sumir (a folga é dele, regra 9).
+   Esta linha QUEBRA em vez de cortar: com reticência, "no lugar de Cap COS…"
+   esconde justamente o nome que ela existe para mostrar. A célula cresce um
+   pouco, e só nos poucos dias em que houve permuta. */
+.dia .mil .sub { display:block; font-size:11px; font-weight:500; color:var(--tinta-2);
+                 white-space:normal; line-height:1.3; margin-top:1px; }
+.legenda .sep { color:var(--tinta-3); margin-left:10px; }
 .fer { color:var(--vermelho); font-weight:700; }
 
 /* Dia de ESCALA VERMELHA: bloco inteiro no vermelho da OM, texto branco. */
@@ -228,7 +237,8 @@ body { transition:padding-left .35s ease; }
 .calendario td.dia.cor-vermelha .fer { color:#fff; }
 .calendario td.dia.cor-vermelha .mil { font-weight:700; }
 /* Sobre o vermelho puro, a sigla apagada sumiria: vira branco translúcido. */
-.calendario td.dia.cor-vermelha .mil .pg { color:rgba(255,255,255,.85); font-weight:600; }
+.calendario td.dia.cor-vermelha .mil .pg,
+.calendario td.dia.cor-vermelha .mil .sub { color:rgba(255,255,255,.85); font-weight:600; }
 /* Sobre o vermelho, o anel do 'hoje' vira branco. */
 .calendario td.dia.hoje.cor-vermelha { box-shadow:inset 0 0 0 2px rgba(255,255,255,.92); }
 /* Dia de outro mês continua apagado, mesmo sendo fim de semana. */
@@ -312,6 +322,10 @@ a.card:hover { border-color:var(--borda-forte); box-shadow:var(--sombra-2); tran
 .tabela tbody tr.inativa td a { color:var(--tinta-2); }
 /* Serviço já coberto por permuta. */
 .tabela tbody tr.permutado td { background:#e7effb; }
+/* Linha que pede providência do gestor (vaga sem candidato, regra 7.8). Âmbar,
+   e não vermelho: é aviso de efetivo, não erro. Vem antes do hover, como a
+   zebra — senão a linha em atenção deixa de parecer em atenção ao passar o rato. */
+.tabela tbody tr.atencao td { background:var(--ambar-fundo); }
 /* Hover por último: tem que vencer a zebra E o estado da linha. */
 .tabela tbody tr:hover td { background:var(--hover-linha); }
 .tabela form { margin:0; padding:0; border:none; background:none; display:inline; box-shadow:none; }
@@ -535,6 +549,18 @@ button.perigo:hover { background:var(--vermelho-fundo); border-color:var(--verme
 .resultado h3 { margin-top:0; }
 .resultado ul { margin:8px 0; padding-left:20px; }
 .resultado li { margin:3px 0; }
+
+/* Por que faltou gente num dia (regra 7.8). Um bloco por dia curto: o dia e as
+   vagas em aberto na primeira linha, os motivos contados abaixo. Âmbar, não
+   vermelho — é aviso de efetivo, não erro do sistema. */
+.faltas { margin-top:16px; border-top:1px solid var(--linha); padding-top:12px; }
+.faltas h4 { margin:0 0 10px; font-size:14px; }
+.falta { border-left:3px solid var(--ambar-borda); background:var(--ambar-fundo);
+         border-radius:var(--raio-p); padding:9px 14px; margin-bottom:8px; }
+.falta-dia { margin:0; font-size:14px; }
+.falta-dia .tag { margin:0 6px; vertical-align:middle; }
+.falta-motivos { margin:6px 0 0; padding-left:20px; font-size:13.5px; }
+.falta .sub { margin:6px 0 0; }
 
 /* --- login ------------------------------------------------------------------ */
 .login-box { max-width:380px; margin:56px auto; border:1px solid var(--borda);

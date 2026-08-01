@@ -33,7 +33,17 @@
       {% for c in semana %}
       <td class="dia cor-{{ c.cor }} {{ 'fora' if not c.no_mes }} {{ 'hoje' if c.hoje }}">
         <span class="num">{{ c.dia }}{% if c.feriado and c.no_mes %} <span class="fer" title="feriado">•</span>{% endif %}</span>
-        {% for m in c.militares %}<span class="mil"><span class="pg">{{ m.posto }}</span> {{ m.nome }}</span>{% endfor %}
+        {# Com permuta, quem assume o serviço vem primeiro e o escalado logo
+           abaixo — os dois ficam à vista, porque a folga é do escalado
+           (regra 9). Sem permuta, uma linha só. #}
+        {% for m in c.militares %}<span class="mil">
+          {%- if m.sub_nome -%}
+            <span class="pg">{{ m.sub_posto }}</span> {{ m.sub_nome }}
+            <span class="sub">no lugar de {{ m.posto }} {{ m.nome }}</span>
+          {%- else -%}
+            <span class="pg">{{ m.posto }}</span> {{ m.nome }}
+          {%- endif -%}
+        </span>{% endfor %}
       </td>
       {% endfor %}
     </tr>
@@ -45,6 +55,7 @@
   <span class="amostra cor-preta"></span> dia útil (preta)
   <span class="amostra cor-vermelha"></span> fim de semana / feriado (vermelha)
   <span class="fer">•</span> feriado
+  <span class="sep">·</span> na permuta, o primeiro nome é quem assume o serviço
 </p>
 {% endif %}
 {% endblock %}

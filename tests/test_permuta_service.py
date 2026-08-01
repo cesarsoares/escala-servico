@@ -1,7 +1,9 @@
 """Testes do serviço de permuta e da concorrência (app/services).
 
-Permuta = registro puro; nega se ferir a folga de quem cobre (regra 10.5). A
-folga NÃO muda de dono (regra 9). Reaproveita o motor para escalar o histórico.
+Permuta = registro puro. A folga NÃO muda de dono (regra 9) e, desde 01/08/2026,
+também NÃO barra a troca (regra 10.5 reescrita pelo Brigada): cobrir não conta na
+folga de quem cobre. Nega-se só o impossível — impedido no dia, já de serviço no
+dia. Reaproveita o motor para escalar o histórico.
 """
 from datetime import date, time
 
@@ -81,9 +83,14 @@ def test_permuta_ok_registra_sem_mover_folga(db):
     assert servico.militar_id == 1
 
 
-def test_permuta_negada_por_folga_do_substituto(db):
-    # M1 e M2 servem em dias consecutivos (mesma escala). Se M1 tenta cobrir o
-    # serviço de M2 no dia seguinte ao seu, fere a própria folga de 48h (10.5).
+def test_folga_minima_nao_barra_a_permuta(db):
+    """Regra 10.5 reescrita em 01/08/2026 — o caso que o Brigada relatou.
+
+    M1 e M2 servem em dias consecutivos. M1 quer cobrir o serviço de M2 no dia
+    seguinte ao seu: ANTES era recusado por "24h < 48h". Agora é aceito —
+    cobrir não conta na folga de quem cobre, a contagem fica com o substituído
+    (10.2), então não há folga a ferir. Quem julga o descanso é quem autoriza.
+    """
     _militar(db, 1); _militar(db, 2)
     _escala(db, 1, "Solo", folga=48)
     _participa(db, 1, 1, 2)
@@ -92,8 +99,25 @@ def test_permuta_negada_por_folga_do_substituto(db):
     assert res[1].escolhidos[0].id == 2   # M2 serve dia 21 (M1 sem folga)
 
     servico_21 = _servico_do_dia(db, 1, date(2026, 7, 21))  # de M2
-    with pytest.raises(PermutaNegada):
-        registrar_permuta(db, servico_21.id, militar_substituto_id=1)  # M1 saiu ontem
+    p = registrar_permuta(db, servico_21.id, militar_substituto_id=1)  # M1 saiu ontem
+    assert p.militar_substituto_id == 1
+    # e a folga do dia 21 continua sendo de M2, que estava escalado (regra 9)
+    db.refresh(servico_21)
+    assert servico_21.militar_id == 2
+
+
+def test_a_escalacao_automatica_continua_respeitando_a_folga(db):
+    """A 10.5 mudou só para a TROCA: o motor (7.4) não afrouxou junto.
+
+    Sem esta guarda, afrouxar a permuta poderia ser lido como afrouxar a folga —
+    e aí a escala automática passaria a pôr o mesmo militar em dias seguidos.
+    """
+    _militar(db, 1); _militar(db, 2)
+    _escala(db, 1, "Solo", folga=48)
+    _participa(db, 1, 1, 2)
+    res = rotacao.escalar_e_gravar_periodo(db, 1, date(2026, 7, 20), date(2026, 7, 21))
+    assert res[0].escolhidos[0].id == 1
+    assert res[1].escolhidos[0].id == 2   # M1 não repete no dia seguinte
 
 
 def test_permuta_negada_substituto_impedido(db):

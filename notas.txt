@@ -47,3 +47,68 @@ com teste, ou decisão registrada no CLAUDE.md.
 6. Achado ao conferir a captura: o título do mês em Serviços lançados à mão saía
    um mês atrasado (agosto lido como "julho") e em janeiro saía VAZIO — MESES tem
    "" na posição 0. Corrigido, com teste.
+
+
+[demandas em 01/08/26]
+
+[resolvidos em 2026-08-01 — itens 1, 3 e 5]
+
+1. Permuta acusando falta de folga mínima numa troca entre dias PREVISTOS.
+   -> A regra 10.5 foi REESCRITA (docs/): a folga mínima não barra mais a troca.
+      Decisão do usuário: cobrir não conta na folga de quem cobre, a contagem
+      fica com o substituído (10.2) — então não há folga a ferir. A permuta é
+      aceita sempre; continuam negadas só as impossibilidades (substituto
+      impedido no dia, já de serviço nesse dia, serviço já permutado).
+      NÃO afrouxou junto: o motor (7.4) e a substituição por conflito seguem
+      exigindo a folga — lá o militar VIRA o escalado e ganha a folga.
+      Manual 2.3.
+
+3. Permuta na consulta: substituto em cima, substituído logo abaixo.
+   -> Feito, e por decisão do usuário vale TAMBÉM no documento impresso (tela e
+      papel divergindo na mesma permuta é erro de leitura garantido). Os dois
+      nomes continuam aparecendo: a folga é de quem estava escalado (regra 9).
+      Na célula do calendário a segunda linha QUEBRA em vez de cortar — com
+      reticência, "no lugar de Cap COS..." esconde justamente o nome que ela
+      existe para mostrar (achado na conferência visual, não nos testes).
+
+5. Impressão da previsão por período (de 15 em 15 dias), não só mês cheio.
+   -> Feito: campos "De ... até" na página de impressão, período na URL
+      (?inicio=&fim=), mês cheio continua sendo o default. Teto de 366 dias
+      porque a página é aberta. Atravessando a virada do mês a coluna do dia
+      passa a "dia/mês", senão "15" aparece duas vezes sem dizer qual é qual.
+      Manual 3.2.
+
+[em aberto — 01/08/26]
+
+2. Sempre que houver alteração na escala (Permuta, dispensa, etc) o sitema deverá disparar o preocesso de ajustar a escala, sem a necessidade do brigada "rodar" a escala novamente. Mas a regra tem que ser a seguinte: A escala deve ser ajustada do dia em questão para a frente. Por exemplo. A escala foi prevista para todo o mês de agosto, porém o sargento joão entrou com pedido de dispensa para o dia 15 de agosto, somente do dia 15 em diante o sistema irá rodar a escala para o ajuste, sem a necessidade de mexer nos dias anteriores.
+
+   DECIDIDO com o usuário em 01/08, falta implementar:
+   - a previsão é só para planejamento; o documento OFICIAL é o boletim, que
+     cobre o dia seguinte (e, na quinta, o bloco sexta-sábado-domingo-segunda).
+     Por isso refazer do dia em diante não invalida nada publicado — a objeção
+     que motivou a tela de Conflitos em 30/07 não se aplica à previsão.
+   - GATILHOS: só o que muda a fila (dispensa/impedimento, serviço lançado ou
+     corrigido à mão, isenção, militar desativado). PERMUTA NÃO DISPARA — pela
+     regra 9 e pela decisão do item 1 acima, ela não mexe na fila.
+   - DIA JÁ PUBLICADO: reajusta mesmo assim, e a tela DESTACA os dias alterados
+     que caem na janela já publicada (amanhã / o bloco do fim de semana), para
+     o brigada saber que aqueles precisam de aditamento no boletim.
+   - a decidir na implementação: o que fazer com as permutas dos dias refeitos
+     (hoje o CASCADE do "regravar" as apaga — ver achado 1 do review de 25/07).
+
+[resolvido em 2026-08-01 — item 4]
+
+4. Toda restrição deve dizer o motivo.
+   -> O exemplo do pedido (permuta) já dizia. A restrição MUDA era o dia que
+      fecha com menos militares que postos (7.8): a tela de Escalar dava um
+      número e nada mais. Agora abre "Por que faltou gente" por dia, com a
+      contagem por motivo (folga 7.4, impedido 7.5, cor 3.3.1, isento 7.6) e
+      QUEM SAI DA FOLGA PRIMEIRO, com a data. Conta em vez de listar nomes:
+      139 participantes dariam 130 nomes por dia.
+   -> Pior caso achado no caminho: o painel dizia "Nenhuma escala roda amanhã"
+      quando a escala rodava e não havia ninguém disponível — afirmação FALSA,
+      pior que o silêncio. Agora a escala aparece destacada, com o motivo.
+   -> Também: cair de volta na lista por redirecionamento deixou de ser mudo
+      (dicionário RECUSAS + ?falha=, espelho do ?ok=). Chave desconhecida não
+      escreve nada — a URL não injeta texto na tela de gestão.
+      Manual 2.1 e 3.3.
