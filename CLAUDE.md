@@ -231,12 +231,38 @@ correspondente, citando o número.
 13. Deploy: container Docker, banco **SQLite** em arquivo (PostgreSQL opcional).
     **Uma instalação por OM** (não multitenant).
 
+## Previsão × boletim × rendição (contexto dado pelo usuário — 2026-08-01)
+
+Os três não são a mesma coisa, e várias decisões só fazem sentido sabendo disso:
+
+- **Previsão** — o que o sistema imprime e divulga. Serve para o militar **se
+  planejar**; não é documento oficial e pode mudar (é o que autoriza o reajuste
+  automático a refazer do dia em diante).
+- **Boletim** — o documento **oficial**, publica o serviço do **dia seguinte**
+  (na quinta, o bloco de sexta a segunda). Ele é montado **fora** do sistema.
+- **Rendição na parada diária** — é o que **configura** que o militar entrou de
+  serviço: ele foi lá fisicamente.
+
+⚠️ **Não existe, e não deve existir, confirmação de rendição no sistema**
+(decisão do usuário, 01/08). Perguntei porque o sistema credita a folga a quem
+está gravado, tenha ele se apresentado ou não. A resposta: quando alguém não se
+apresenta, o gestor **corrige o serviço à mão** (`/gestao/servicos`) — e, desde
+o item 2, essa correção dispara o reajuste, acertando fila e folga daí em
+diante. O laço fecha sem campo novo.
+
 ## Fora do escopo da v1
 
 **Escala de representação** (designação de N militares para eventos pontuais,
 tipo palestra) é **Fase 2**. Não é rotação, não tem preta/vermelha, não gera
 folga. Único vínculo: quem está de serviço 24h no dia não vai. Não construir
 agora.
+
+**Saldo de permutas ("quem deve a quem") — descartado** (decisão do usuário,
+01/08). Quem cobre fica "devendo" uma escala a quem ajudou, mas isso **fica por
+conta do Brigada e dos envolvidos se manifestarem**. O dado existe (a permuta
+guarda quem cobriu quem, e quando) e a tentação de somá-lo vai reaparecer:
+**não somar é a decisão**. Transformar o acerto pessoal em saldo do sistema
+convidaria a cobrança automática, que a regra 10.3 proíbe.
 
 ## Importação da ficha individual (feito)
 
@@ -1348,10 +1374,17 @@ porque agora cobre os dois casos.
    (entrou junto com as libs do Pango); falta a rota que renderiza
    `impressao.html` (e agora também `manual.html`) com ele, em vez de depender
    do "salvar como PDF" do navegador.
-2. Validar com o Brigada as mudanças de regra em aberto: a remoção da previsão
-   (afeta a regra 10), o override para **preta** (generaliza a 5.3) e a
-   **participação restrita a uma cor (3.3.1)**, escrita em 27/07.
-3. Fase 2: módulo de representação.
+2. ⚠️ **Reescrever a seção 11 do `docs/` (previsão × motor)**: o item 2 a tornou
+   falsa. A 11.2 diz que o gestor mantém a previsão "na mão" e a 11.3 que o
+   sistema só **avisa** a divergência, cabendo a ele **re-fechar** — o sistema
+   re-fecha sozinho, do dia em diante. O `docs/` é a fonte da verdade e está
+   descrevendo comportamento que não existe mais. Parado à espera dos testes do
+   Brigada (01/08).
+3. Validar com o Brigada as mudanças de regra em aberto: o override para
+   **preta** (generaliza a 5.3) e a **participação restrita a uma cor (3.3.1)**,
+   escrita em 27/07. **Avisá-lo antes de testar** que a permuta antes negada por
+   folga agora passa (10.5, decisão dele).
+4. Fase 2: módulo de representação.
 
 ## ⚠️ O container não fica de pé nesta máquina (Windows/WSL)
 

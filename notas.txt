@@ -22,6 +22,28 @@ com teste, ou decisão registrada no CLAUDE.md.
       único, "Esqueci a senha" no login: código gravado em
       dados/recuperar-senha.txt, vence em 1h, morre ao usar. Manual, seção 4.
 
+[em aberto — aguardando os testes do Brigada (parado em 01/08)]
+
+A. AVISAR O BRIGADA antes de ele testar: a permuta que antes era negada por
+   folga mínima agora PASSA (regra 10.5, reescrita a pedido dele). O
+   comportamento mudou de forma visível; melhor ele saber do que descobrir
+   achando que quebrou.
+
+B. A seção 11 do docs/ (previsão × motor) ficou DESATUALIZADA pelo item 2:
+   - 11.2 diz que o gestor mantém a previsão "na mão";
+   - 11.3 diz que o sistema avisa a divergência e o gestor decide se re-fecha.
+   Nenhuma das duas vale mais — o sistema re-fecha sozinho, do dia em diante.
+   Reescrever a seção depois que o Brigada validar o comportamento.
+
+C. Duas perguntas devolvidas ao usuário, sem resposta ainda:
+   - extrato diário para o BOLETIM (o do dia seguinte; na quinta, o bloco):
+     hoje o sistema só imprime a previsão, e o boletim é montado fora dele.
+     Se alguém copia os nomes da tela todo dia, é tarefa que dá para entregar
+     pronta;
+   - feriado prolongado muda a janela do que "já saiu no boletim"? Hoje a marca
+     do reajuste só considera quinta-feira; o calendário de feriados já existe
+     e daria para usar.
+
 [a validar com o Brigada — em aberto desde 27/07]
 
 - remoção da previsão (afeta a regra 10)
