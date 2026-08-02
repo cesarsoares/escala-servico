@@ -1258,6 +1258,11 @@ troca, ele não cumpre.
 - **Consequência aceita** (perguntada e respondida): o sistema não impede mais
   que o mesmo militar cumpra dias seguidos por efeito de uma troca. Quem julga o
   descanso é quem autoriza.
+- ⚠️ **Nem trava de DATA há** — dá para permutar o serviço que já começou hoje,
+  e o passado. Testado e confirmado pelo usuário em 01/08: é o caso NORMAL (o
+  militar passa mal na parada e outro assume), não uma brecha. Não "consertar"
+  numa revisão futura. Quem não mexe no passado é o **reajuste automático**, que
+  é outra coisa: lá decide o sistema, aqui decide o gestor registrando um fato.
 - ⚠️ **NADA MAIS AFROUXOU, e isso é o que um leitor apressado quebra:** o motor
   (7.4) e `conflitos.substituir` continuam exigindo a folga integralmente. Não é
   contradição — na permuta o escalado NÃO muda e a folga fica com ele; nos

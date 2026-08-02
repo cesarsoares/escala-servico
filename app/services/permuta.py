@@ -17,6 +17,17 @@ concorrente, substituto igual ao escalado e serviço já permutado.
 
 Isto vale só para a TROCA. Na escalação automática (motor, regra 7.4) a folga
 mínima continua valendo integralmente.
+
+⚠️ **Não há trava de DATA, e é deliberado** (confirmado pelo usuário em
+01/08/2026, ao testar a troca de um serviço já em andamento). Trocar o escalado
+de um serviço que começou hoje é o caso NORMAL, não o caso estranho: o militar
+passa mal na parada e outro assume no lugar dele. Serviço passado idem —
+registrar o que de fato aconteceu é o objetivo, mesma postura de fato consumado
+do lançamento à mão e da importação de CSV.
+
+Quem não mexe no passado é o REAJUSTE automático (`services/reajuste.py`), e são
+coisas diferentes: lá o SISTEMA decide sozinho, e reescrever o que já ocorreu
+seria falsificação; aqui quem decide é o gestor, registrando um fato.
 """
 from __future__ import annotations
 
