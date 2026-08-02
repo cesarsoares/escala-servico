@@ -78,7 +78,25 @@ com teste, ou decisão registrada no CLAUDE.md.
       passa a "dia/mês", senão "15" aparece duas vezes sem dizer qual é qual.
       Manual 3.2.
 
-[em aberto — 01/08/26]
+[resolvido em 2026-08-01 — item 2, o último do bloco]
+
+2. Reajuste automático da escala, do dia em diante.
+   -> Feito: app/services/reajuste.py + /gestao/reajuste/{id}. Dispara sozinho
+      em impedimento (criado/removido), serviço lançado/corrigido/removido à
+      mão, participante incluído/isento e militar desativado/reativado.
+      PERMUTA NÃO DISPARA (regra 9) e dia COM permuta não é refeito.
+      Nada antes de amanhã: para hoje, o passado e os dias com permuta continua
+      valendo a tela de Conflitos. Não estende a escala — vai até o último dia
+      já fechado. Dias alterados que caem na janela do boletim (amanhã; na
+      quinta, sexta a segunda) vêm marcados, para o brigada saber que precisam
+      de aditamento. O antes/depois fica na auditoria: depois de gravado ele não
+      existe mais em lugar nenhum, e o gestor não pediu a mudança. Manual 2.1.1.
+   -> ⚠️ Achado no caminho, e ANTERIOR a esta rodada: militar desativado
+      continuava sendo escalado, embora a tela dissesse "saiu da rotação".
+      mapeamento.participacoes_da_escala olhava só participacao.ativo.
+      Corrigido, com teste.
+
+O texto original do pedido, para conferência:
 
 2. Sempre que houver alteração na escala (Permuta, dispensa, etc) o sitema deverá disparar o preocesso de ajustar a escala, sem a necessidade do brigada "rodar" a escala novamente. Mas a regra tem que ser a seguinte: A escala deve ser ajustada do dia em questão para a frente. Por exemplo. A escala foi prevista para todo o mês de agosto, porém o sargento joão entrou com pedido de dispensa para o dia 15 de agosto, somente do dia 15 em diante o sistema irá rodar a escala para o ajuste, sem a necessidade de mexer nos dias anteriores.
 
@@ -93,8 +111,11 @@ com teste, ou decisão registrada no CLAUDE.md.
    - DIA JÁ PUBLICADO: reajusta mesmo assim, e a tela DESTACA os dias alterados
      que caem na janela já publicada (amanhã / o bloco do fim de semana), para
      o brigada saber que aqueles precisam de aditamento no boletim.
-   - a decidir na implementação: o que fazer com as permutas dos dias refeitos
-     (hoje o CASCADE do "regravar" as apaga — ver achado 1 do review de 25/07).
+   - PERMUTA (decidido pelo usuário em 01/08): o reajuste NÃO refaz o dia que
+     tem permuta registrada — pula e segue nos demais. A permuta é acerto entre
+     duas pessoas, autorizado pelo gestor; o sistema não a desfaz sozinho. Os
+     dias pulados são listados. (O "regravar" manual continua como está: ali o
+     gestor pediu explicitamente para refazer tudo.)
 
 [resolvido em 2026-08-01 — item 4]
 

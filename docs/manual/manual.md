@@ -181,6 +181,35 @@ escala, esperar o fim de uma dispensa, ou simplesmente aguardar a folga fechar.
 > dia curto tem mais de cem preteridos, e cem nomes não são informação. Períodos
 > longos mostram os 20 primeiros dias curtos e dizem quantos ficaram de fora.
 
+### 2.1.1 A escala se reajusta sozinha
+
+**Você não precisa rodar a escala de novo depois de uma alteração.** Ao gravar
+uma dispensa, corrigir um serviço, isentar um participante ou desativar um
+militar, o sistema **refaz a escala do dia em diante** e mostra o que mudou:
+cada dia alterado com quem estava antes e quem está agora.
+
+O que ele **não** toca:
+
+- **hoje e o passado** — o serviço de hoje já começou. Para esses continua
+  valendo a tela de **Conflitos**, que troca um dia só;
+- **dias com permuta registrada** — a permuta é um acerto entre duas pessoas,
+  autorizado por você; o sistema não a desmancha sozinho. Esses dias aparecem
+  listados como "não refeitos". Para mexer neles, cancele a permuta antes;
+- **dias além do que já estava fechado** — reajustar não estende a escala.
+  Fechar um mês novo continua sendo feito em **Escalar**.
+
+**Permuta não dispara reajuste**, e é de propósito: ela não muda a fila (a folga
+continua com quem estava escalado — regra 9), então não haveria o que reajustar.
+
+> **Dias que já saíram no boletim vêm marcados.** O boletim publica o serviço do
+> dia seguinte — e, na quinta-feira, o bloco de sexta a segunda. Se o reajuste
+> alcançou algum desses dias, a tela avisa em destaque: o sistema não tem como
+> corrigir o documento publicado, e aqueles dias precisam de **aditamento**.
+
+Cada reajuste fica registrado no **Histórico** (tipo `reajuste`), com o antes e
+o depois. Vale reabrir: depois de gravado, o "antes" não existe em mais lugar
+nenhum.
+
 ### 2.2 Lançar uma dispensa, férias, curso ou operação
 
 No **Efetivo**, ao lado da pessoa, clique em **impedimentos** — abre a ficha

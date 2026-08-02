@@ -53,7 +53,9 @@ ROTULO_MOTIVO = {
     MOTIVO_IMPEDIDO: "com impedimento no dia — dispensa, férias, curso (regra 7.5)",
     MOTIVO_FOLGA: "sem a folga mínima cumprida (regra 7.4)",
     MOTIVO_COR: "sem concorrer nesta cor (regra 3.3.1)",
-    MOTIVO_INATIVO: "com a participação isenta nesta escala (regra 7.6)",
+    # Cobre os dois jeitos de estar fora da fila sem ser "pulado": isento desta
+    # escala (7.6) e militar desativado no efetivo.
+    MOTIVO_INATIVO: "fora da escala — isento ou militar desativado (regra 7.6)",
 }
 # Ordem em que os motivos são listados: primeiro o que muda amanhã (folga),
 # depois o que depende de um ato do gestor, por último o que é permanente.

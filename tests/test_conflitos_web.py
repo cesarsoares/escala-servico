@@ -289,18 +289,50 @@ def test_tela_de_escolha_de_servico_inexistente_volta_para_a_lista(logado):
 def test_impedimento_sobre_dia_ja_escalado_leva_aos_conflitos(logado, db, cenario):
     """O defeito relatado: gravava o impedimento, dizia 'ok' e o serviço ficava.
 
-    Agora o gestor cai direto na tela de resolução, com o período já filtrado.
+    O gestor cai na tela de resolução, com o período já filtrado. Desde 01/08
+    (item 2) isto vale para o que o reajuste automático NÃO pode consertar: o
+    dia corrente e o passado — o serviço de hoje já começou, e reescrever o
+    passado não é ajuste. Para o futuro, ver o teste seguinte.
+
+    ⚠️ A data sai de `date.today()`: cravada, o teste passaria a exercitar o
+    caminho oposto assim que a suíte rodasse depois daquele dia.
     """
-    _, _, silva, _ = cenario
+    escala, _, silva, _ = cenario
+    hoje = date.today()
+    _servico(db, escala, silva, hoje)
+    db.commit()
     r = logado.post("/gestao/impedimentos", data={
         "militar_id": silva.id, "tipo_impedimento_id": 1,
-        "inicio": DIA.isoformat(), "fim": DIA.isoformat(), "observacao": "dispensa",
+        "inicio": hoje.isoformat(), "fim": hoje.isoformat(), "observacao": "dispensa",
     }, follow_redirects=False)
     assert r.status_code == 303
     destino = r.headers["location"]
     assert destino.startswith("/gestao/conflitos")
     assert f"militar_id={silva.id}" in destino
     assert "ok=impedimento-com-conflito" in destino
+
+
+def test_impedimento_sobre_dia_futuro_e_resolvido_pelo_reajuste(logado, db, cenario):
+    """Item 2 (01/08): o dia futuro deixou de virar conflito.
+
+    A escala se reajusta do dia em diante sozinha, sem o brigada "rodar" nada, e
+    ele vai para o relatório do que mudou em vez da fila de conflitos — que
+    estaria vazia.
+    """
+    escala, _, silva, roana = cenario
+    futuro = date.today() + timedelta(days=4)
+    _servico(db, escala, silva, futuro)
+    db.commit()
+    r = logado.post("/gestao/impedimentos", data={
+        "militar_id": silva.id, "tipo_impedimento_id": 1,
+        "inicio": futuro.isoformat(), "fim": futuro.isoformat(),
+    }, follow_redirects=False)
+    assert r.status_code == 303
+    assert r.headers["location"].startswith("/gestao/reajuste/")
+
+    # e o dia realmente trocou de escalado, sem ninguém pedir
+    s = db.scalar(select(Servico).where(Servico.dia == futuro))
+    assert s is not None and s.militar_id == roana.id
 
 
 def test_impedimento_sem_dia_escalado_volta_para_a_lista_de_sempre(logado, db, cenario):

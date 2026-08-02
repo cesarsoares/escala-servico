@@ -1277,24 +1277,70 @@ em `app/web/__init__.py`, espelho do `AVISOS`/`?ok=`, renderizado no
 de conflitos — senão qualquer link imprime o que quiser numa tela de gestão; e
 chave desconhecida não exibe nada.
 
-## Item 2 (reajuste automático) — decidido, ainda NÃO implementado
+## Reajuste automático da escala (feito — 2026-08-01)
 
-O que o usuário respondeu em 01/08, e que remove a objeção registrada na seção
-das 3 demandas do Brigada:
+Item 2, o último do bloco. `app/services/reajuste.py` + `/gestao/reajuste/{id}`;
+testes em `tests/test_reajuste.py`.
 
-- **A previsão não é documento oficial** — é para as pessoas se planejarem. O
-  oficial é o **boletim**, que publica o serviço do **dia seguinte** e, na
-  quinta, o bloco **sexta-sábado-domingo-segunda**. Logo, refazer a escala do
-  dia em diante não invalida nada publicado, que era o receio de 30/07.
-- **Gatilhos: só o que muda a fila** (dispensa/impedimento, serviço lançado ou
-  corrigido à mão, isenção, desativação). **Permuta não dispara** — pela regra 9
-  e pela 10.5 acima, ela não mexe na fila; disparar mudaria os dias seguintes
-  sem que nada tivesse mudado.
-- **Dia já publicado: reajusta e AVISA quais.** A tela destaca os dias alterados
-  que caem na janela já publicada, para o gestor saber que precisam de
-  aditamento. O sistema não decide por ele nem esconde a consequência.
-- Em aberto para a implementação: o destino das **permutas dos dias refeitos**
-  (o "regravar" as apaga por CASCADE — achado 1 do review de 25/07).
+**A objeção de 30/07 caiu quando o usuário explicou o que o boletim é.** A tela
+de Conflitos nasceu porque refazer o mês muda todos os dias e o mês "já podia ter
+saído no boletim". Só que a **previsão não é documento oficial** — serve para as
+pessoas se planejarem. O oficial é o **boletim**, e ele cobre o **dia seguinte**
+(na quinta, o bloco **sexta a segunda**). Refazer de um dia em diante, portanto,
+não invalida nada publicado; o que o gestor precisa é **saber** quando o
+reajuste alcança essa janela. Daí `reajuste.dias_no_boletim`.
+
+Quatro decisões, todas com o porquê no docstring do módulo:
+
+1. **Permuta não é refeita** (decisão do usuário): o dia que tem permuta fica
+   intocado. É acerto entre duas pessoas, autorizado pelo gestor — o sistema não
+   desfaz sozinho. O `regravar` manual continua apagando, e está certo: ali o
+   gestor pediu. ⚠️ Pular o DIA inteiro (e não só o serviço permutado) também
+   evita uma armadilha: refazer parte de um dia deixaria o mesmo militar assumir
+   um segundo posto nele — a folga olha `dia <` e não veria o serviço que ele já
+   tem naquele dia.
+2. **Nada antes de amanhã.** O serviço de hoje já começou. Para hoje, o passado
+   e os dias com permuta continua valendo a tela de **Conflitos** — as duas se
+   complementam, não se substituem.
+3. **O horizonte é o que já está fechado**: vai até o último dia gravado.
+   Reajustar não estende a escala; fechar mês novo segue sendo ato do gestor.
+4. **Permuta não DISPARA** reajuste (regra 9 + 10.5): ela não mexe na fila, e
+   disparar mudaria os dias seguintes sem que nada tivesse mudado.
+
+**Gatilhos ligados:** impedimento criado/removido, serviço lançado/corrigido/
+removido à mão, participante incluído/isento, militar desativado/reativado. Ao
+corrigir a data de um serviço, o reajuste parte do dia **mais antigo** entre o
+de antes e o de agora — senão o trecho que ficou para trás seguiria montado
+sobre a data errada.
+
+**O "antes" vai para a AUDITORIA, e é por isso que a tela existe.** Depois de
+gravado ele não existe mais em lugar nenhum, e o gestor **não pediu** esta
+mudança. `registrar_auditoria` guarda o retrato e devolve o id; a rota
+redireciona para `/gestao/reajuste/{id}`. Assim o POST-redirect-GET continua
+valendo e o registro é permanente (dá para reabrir pelo Histórico semanas
+depois). Nada mudou = nenhum registro e nenhuma tela.
+
+⚠️ **`db.expire_all()` depois do DELETE em massa.** Ele não passa pela sessão, e
+o SQLite reaproveita `rowid`: a linha nova nasce com um id que a sessão julga
+conhecer, e quem chamou leria o objeto ANTIGO depois do commit. Apareceu como
+`SAWarning` de identity map.
+
+⚠️ **`ENTIDADE`/`ACAO` moram no SERVIÇO**, não no router: o router da tela
+importa `gestor_web` de `web/gestao.py`, que por sua vez dispara reajuste —
+colocá-las lá fecharia um ciclo de import.
+
+## ⚠️ Militar desativado continuava sendo escalado (corrigido — 2026-08-01)
+
+Achado ao ligar o gatilho de desativação, e **anterior a esta rodada**:
+`mapeamento.participacoes_da_escala` montava `ativo=p.ativo` olhando só a
+`participacao` — a isenção da escala (7.6). O militar **desativado no efetivo**
+(saiu da OM, foi para a reserva) seguia na fila e era escalado normalmente,
+enquanto a confirmação da tela afirmava "saiu da rotação". Agora é
+`p.ativo and militar.ativo`, na camada de mapeamento, que é quem conhece as duas
+colunas. Coberto por `test_militar_desativado_sai_da_fila`.
+
+O rótulo de `MOTIVO_INATIVO` passou a dizer "isento **ou militar desativado**",
+porque agora cobre os dois casos.
 
 ## Próximos passos sugeridos
 

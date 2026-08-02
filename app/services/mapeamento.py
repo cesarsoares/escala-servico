@@ -134,7 +134,13 @@ def participacoes_da_escala(
             escala_id=escala_id,
             ultima_preta=idx.get((p.militar_id, Cor.PRETA)),
             ultima_vermelha=idx.get((p.militar_id, Cor.VERMELHA)),
-            ativo=p.ativo,
+            # ⚠️ DUAS condições, e a segunda foi um defeito real até 01/08:
+            # `participacao.ativo` é a isenção da escala (regra 7.6), mas o
+            # militar DESATIVADO (saiu da OM, passou para a reserva) também não
+            # concorre — e sem este `and` ele continuava sendo escalado, com a
+            # tela afirmando que ele "saiu da rotação". Aqui, e não no domínio,
+            # porque é a tradução do banco que sabe das duas colunas.
+            ativo=p.ativo and militares[p.militar_id].ativo,
             serve_preta=p.serve_preta,
             serve_vermelha=p.serve_vermelha,
         )

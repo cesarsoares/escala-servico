@@ -28,7 +28,7 @@ from app.models.escala import Escala, Participacao, Posto
 from app.models.gestao import Usuario
 from app.models.militar import Militar
 from app.models.servico import Permuta, Servico
-from app.services import auditoria, lancamento
+from app.services import auditoria, lancamento, reajuste
 from app.services.publicacao import DIAS_SEMANA, MESES
 from app.web import ANO_MAX, ANO_MIN, templates
 from app.web.gestao import agrupar_por_posto, gestor_web
@@ -183,7 +183,14 @@ def lancar(
     auditoria.registrar(db, usuario_id=gestor.id, entidade="servico",
                         entidade_id=servico.id, acao="lancar",
                         depois=lancamento.retrato(servico))
+    # Serviço lançado muda a folga e a fila deste militar (6.2/7.4) — logo, quem
+    # o motor põe nos dias seguintes. Reajusta do dia em diante (item 2, 01/08).
+    rid = reajuste.registrar_auditoria(
+        db, gestor_id=gestor.id, origem="servico-lancado",
+        reajustes=reajuste.reajustar_por_militar(db, militar_id, d))
     db.commit()
+    if rid:
+        return RedirectResponse(f"/gestao/reajuste/{rid}", status_code=303)
     return RedirectResponse(
         f"/gestao/servicos?escala_id={escala_id}&ano={d.year}&mes={d.month}"
         "&ok=servico-lancado", status_code=303)
@@ -233,7 +240,16 @@ def alterar(
     auditoria.registrar(db, usuario_id=gestor.id, entidade="servico",
                         entidade_id=servico_id, acao="alterar", antes=antes,
                         depois=lancamento.retrato(servico))
+    # Corrigir a data move a folga do militar; o reajuste parte do dia MAIS
+    # ANTIGO entre o de antes e o de agora — senão o trecho que ficou para trás
+    # continuaria montado sobre a data errada.
+    desde = min(d, date.fromisoformat(antes["dia"]))
+    rid = reajuste.registrar_auditoria(
+        db, gestor_id=gestor.id, origem="servico-alterado",
+        reajustes=reajuste.reajustar_por_militar(db, militar_id, desde))
     db.commit()
+    if rid:
+        return RedirectResponse(f"/gestao/reajuste/{rid}", status_code=303)
     return RedirectResponse(
         f"/gestao/servicos?escala_id={servico.escala_id}&ano={d.year}&mes={d.month}"
         "&ok=servico-alterado", status_code=303)
@@ -252,10 +268,16 @@ def remover(
         return RedirectResponse("/gestao/servicos", status_code=303)
     escala_id = servico.escala_id
     antes = lancamento.retrato(servico)
+    militar_id, dia_do_servico = servico.militar_id, servico.dia
     lancamento.remover(db, servico_id)
     auditoria.registrar(db, usuario_id=gestor.id, entidade="servico",
                         entidade_id=servico_id, acao="excluir", antes=antes)
+    rid = reajuste.registrar_auditoria(
+        db, gestor_id=gestor.id, origem="servico-removido",
+        reajustes=reajuste.reajustar_por_militar(db, militar_id, dia_do_servico))
     db.commit()
+    if rid:
+        return RedirectResponse(f"/gestao/reajuste/{rid}", status_code=303)
     return RedirectResponse(
         f"/gestao/servicos?escala_id={escala_id}&ano={ano}&mes={mes}"
         "&ok=servico-removido", status_code=303)

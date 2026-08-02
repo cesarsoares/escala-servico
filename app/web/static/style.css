@@ -343,6 +343,9 @@ a.card:hover { border-color:var(--borda-forte); box-shadow:var(--sombra-2); tran
 .tag-alterar { background:#fef3cd; color:var(--ambar); border-color:var(--ambar-borda); }
 .tag-excluir { background:var(--vermelho-fundo); color:var(--vermelho); border-color:var(--vermelho-borda); }
 .tag-escalar { background:#e7eefb; color:#1c4db3; border-color:#c9d8f5; }
+/* Reajuste automático: mesma família do 'escalar' (é escalação), tom próprio
+   porque não foi o gestor quem mandou — vale distinguir no Histórico. */
+.tag-reajustar { background:#eef2fb; color:#2b4a8b; border-color:#d3ddf2; }
 .tag.cor-preta { background:#eceef1; color:#333; border-color:var(--borda); }
 .tag.cor-vermelha { background:var(--vermelho-fundo); color:var(--vermelho);
                     border-color:var(--vermelho-borda); }

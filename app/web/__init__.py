@@ -77,6 +77,14 @@ AVISOS = {
     "impedimento-com-conflito": "Impedimento registrado — e ele alcança dias que já "
                                 "estavam escalados. Resolva-os abaixo: o motor não "
                                 "desfaz sozinho o que já foi gravado.",
+    # O reajuste automático (item 2, 01/08) cobre o futuro; o que sobra é o que
+    # ele não pode tocar — hoje, o passado e os dias com permuta.
+    "impedimento-com-conflito-reajustado": "Impedimento registrado. A escala já "
+                                           "foi reajustada de amanhã em diante — "
+                                           "o que sobrou abaixo é o que o sistema "
+                                           "não pode refazer sozinho: o dia "
+                                           "corrente, o passado e os dias com "
+                                           "permuta.",
     "impedimento-removido": "Impedimento removido.",
     "conflito-resolvido": "Escalado trocado neste dia. O restante do período não mudou.",
     "servico-lancado": "Serviço registrado. Ele já conta para a fila e para a folga "
@@ -154,6 +162,8 @@ RECUSAS = {
     "escala-inexistente": "Essa escala não existe mais — pode ter sido excluída. "
                           "A lista abaixo é a atual.",
     "posto-inexistente": "Esse posto não existe mais nesta escala.",
+    "reajuste-inexistente": "Esse registro de reajuste não existe. Os reajustes "
+                            "ficam no Histórico, em 'reajuste'.",
 }
 templates.env.globals["RECUSAS"] = RECUSAS
 

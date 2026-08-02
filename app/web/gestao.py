@@ -30,7 +30,7 @@ from app.models.referencia import OrganizacaoMilitar, PostoGraduacao, TipoImpedi
 from app.models.servico import Permuta, Servico
 from app.normalizacao import so_digitos
 from app.security import criar_token, hash_dummy, ler_token, verificar_senha
-from app.services import auditoria, conflitos, importacao, rotacao
+from app.services import auditoria, conflitos, importacao, reajuste, rotacao
 from app.services import configuracao as cfg
 from app.services import instalacao
 from app.services import painel as painel_service
@@ -614,7 +614,14 @@ def militar_desativar(militar_id: int, db: Session = Depends(get_db), gestor: Us
         m.ativo = False
         auditoria.registrar(db, usuario_id=gestor.id, entidade="militar", entidade_id=m.id,
                             acao="excluir", antes=antes, depois=auditoria.snapshot(m))
+        # Quem sai do efetivo sai da fila (ver mapeamento.participacoes_da_escala):
+        # os dias já fechados precisam de outro no lugar dele.
+        rid = reajuste.registrar_auditoria(
+            db, gestor_id=gestor.id, origem="militar-desativado",
+            reajustes=reajuste.reajustar_por_militar(db, militar_id, date.today()))
         db.commit()
+        if rid:
+            return RedirectResponse(f"/gestao/reajuste/{rid}", status_code=303)
     return RedirectResponse("/gestao/militares?ok=militar-desativado", status_code=303)
 
 
@@ -626,7 +633,12 @@ def militar_reativar(militar_id: int, db: Session = Depends(get_db), gestor: Usu
         m.ativo = True
         auditoria.registrar(db, usuario_id=gestor.id, entidade="militar", entidade_id=m.id,
                             acao="alterar", antes=antes, depois=auditoria.snapshot(m))
+        rid = reajuste.registrar_auditoria(
+            db, gestor_id=gestor.id, origem="militar-reativado",
+            reajustes=reajuste.reajustar_por_militar(db, militar_id, date.today()))
         db.commit()
+        if rid:
+            return RedirectResponse(f"/gestao/reajuste/{rid}", status_code=303)
     return RedirectResponse("/gestao/militares?situacao=inativos&ok=militar-reativado",
                             status_code=303)
 
@@ -849,21 +861,33 @@ def criar_impedimento(
     db.flush()
     auditoria.registrar(db, usuario_id=gestor.id, entidade="impedimento",
                         entidade_id=imp.id, acao="criar", depois=auditoria.snapshot(imp))
+
+    # Item 2 do Brigada (01/08): a escala se reajusta sozinha do dia em diante,
+    # sem ele "rodar" nada. Vai na MESMA transação da dispensa — ou as duas
+    # coisas entram, ou nenhuma. Nada antes de amanhã, e dia com permuta fica
+    # intocado (ver app/services/reajuste.py).
+    rid = reajuste.registrar_auditoria(
+        db, gestor_id=gestor.id, origem="impedimento-criado",
+        reajustes=reajuste.reajustar_por_militar(db, militar_id, d_ini))
     db.commit()
 
-    # Se o impedimento alcança dias JÁ escalados, é aí que está o problema real
-    # (demanda do Brigada, 30/07): o motor não escala impedido, mas o que já foi
-    # gravado não se desfaz sozinho. Levar o gestor direto para a resolução vale
-    # mais que uma confirmação verde e um conflito silencioso mês adentro.
+    # O reajuste cobre o futuro; sobra o que ele não pode tocar — o dia corrente,
+    # o passado e os dias com permuta. É aí que continua morando o problema real
+    # relatado em 30/07: o motor não escala impedido, mas o que já foi gravado
+    # não se desfaz sozinho. Conflito restante vem ANTES do relatório: é o que
+    # faz alguém entrar de serviço impedido.
     # `com_substituto=False`: aqui só se pergunta SE existe conflito.
     if conflitos.conflitos(db, militar_id=militar_id, de=d_ini, ate=d_fim,
                            com_substituto=False):
+        aviso = "impedimento-com-conflito-reajustado" if rid else "impedimento-com-conflito"
         return RedirectResponse(
             f"/gestao/conflitos?militar_id={militar_id}&de={d_ini.isoformat()}"
-            f"&ate={d_fim.isoformat()}&ok=impedimento-com-conflito",
+            f"&ate={d_fim.isoformat()}&ok={aviso}",
             status_code=303,
         )
-    return RedirectResponse(_volta_para(contexto, "impedimento-criado"), status_code=303)
+    return RedirectResponse(
+        f"/gestao/reajuste/{rid}" if rid else _volta_para(contexto, "impedimento-criado"),
+        status_code=303)
 
 
 @router.post("/impedimentos/{imp_id}/remover")
@@ -872,13 +896,22 @@ def remover_impedimento(
     db: Session = Depends(get_db), gestor: Usuario = Depends(gestor_web),
 ):
     imp = db.get(Impedimento, imp_id)
+    rid = None
     if imp is not None:
         antes = auditoria.snapshot(imp)
+        militar_id, desde = imp.militar_id, imp.inicio
         db.delete(imp)
         auditoria.registrar(db, usuario_id=gestor.id, entidade="impedimento",
                             entidade_id=imp_id, acao="excluir", antes=antes)
+        # Remover impedimento também mexe na fila: o militar volta a concorrer
+        # e é dos mais folgados, justamente por ter ficado de fora.
+        rid = reajuste.registrar_auditoria(
+            db, gestor_id=gestor.id, origem="impedimento-removido",
+            reajustes=reajuste.reajustar_por_militar(db, militar_id, desde))
         db.commit()
-    return RedirectResponse(_volta_para(contexto, "impedimento-removido"), status_code=303)
+    return RedirectResponse(
+        f"/gestao/reajuste/{rid}" if rid else _volta_para(contexto, "impedimento-removido"),
+        status_code=303)
 
 
 # --- Permutas (regra 9) ---

@@ -1,0 +1,72 @@
+{% extends "gestao/base_gestao.html" %}
+{% block title %}Escala reajustada — Gestão{% endblock %}
+{% block gestao %}
+<h2>A escala foi reajustada</h2>
+<p class="sub">{{ origem }} O sistema refez a escala <strong>do dia em diante</strong>,
+sem tocar nos dias anteriores — você não precisa rodar a escala de novo.
+<span class="fraco">{{ quando|hora_local }}</span></p>
+
+{% if total_boletim %}
+{# O que o Brigada precisa saber ANTES de qualquer contagem: o boletim publica o
+   serviço do dia seguinte (e, na quinta, o bloco de sexta a segunda). Dia
+   alterado dentro dessa janela já saiu publicado e pede aditamento. #}
+<p class="alerta-caixa"><strong>{{ total_boletim }} dia(s) alterado(s) já saíram
+no boletim</strong> — estão marcados abaixo. O sistema não tem como corrigir o
+documento publicado: eles precisam de aditamento.</p>
+{% endif %}
+
+{% for r in reajustes %}
+<div class="resultado">
+  <h3>{{ r.escala }}
+    {% if r.inicio %}<span class="fraco">— {{ r.inicio.strftime('%d/%m/%Y') }}
+      a {{ r.fim.strftime('%d/%m/%Y') }}</span>{% endif %}</h3>
+
+  {% if r.alterados %}
+  <table class="tabela">
+    <thead><tr><th>Dia</th><th>Antes</th><th>Depois</th></tr></thead>
+    <tbody>
+      {% for d in r.alterados %}
+      <tr class="{{ 'atencao' if d.no_boletim }}">
+        <td>{{ d.dia.strftime('%d/%m') }}
+          {% if d.no_boletim %}<span class="tag tag-alterar">no boletim</span>{% endif %}</td>
+        <td>{{ d.antes|join(' · ') if d.antes else '—' }}</td>
+        <td><strong>{{ d.depois|join(' · ') if d.depois else '—' }}</strong></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="sub">Nenhum dia mudou de escalado — a fila já estava consistente com
+    a alteração.</p>
+  {% endif %}
+
+  <ul>
+    <li><strong>{{ r.dias_processados }}</strong> dia(s) refeito(s);
+      <strong>{{ r.alterados|length }}</strong> mudaram de escalado</li>
+    {% if r.pulados %}
+    {# Decisão de 01/08: permuta é acerto entre duas pessoas, autorizado pelo
+       gestor. O sistema não a desfaz sozinho. #}
+    <li><strong>{{ r.pulados|length }}</strong> dia(s) <strong>não</strong> foram
+      refeitos por terem permuta registrada:
+      {% for d in r.pulados %}{{ d.strftime('%d/%m') }}{{ ", " if not loop.last }}{% endfor %}.
+      <span class="fraco">Para mexer neles, cancele a permuta antes.</span></li>
+    {% endif %}
+    {% if r.descobertos %}
+    <li class="alerta"><strong>{{ r.descobertos|length }}</strong> dia(s) ficaram
+      com menos militares que postos (regra 7.8):
+      {% for d in r.descobertos %}{{ d.strftime('%d/%m') }}{{ ", " if not loop.last }}{% endfor %}.
+      <span class="fraco">Em <a href="/gestao/escalar">Escalar</a> o mesmo período
+      mostra por que faltou gente.</span></li>
+    {% endif %}
+  </ul>
+
+  <a class="botao secundario" href="/?escala_id={{ r.escala_id }}{% if r.inicio %}&ano={{ r.inicio.year }}&mes={{ r.inicio.month }}{% endif %}">
+    Ver no calendário →</a>
+</div>
+{% else %}
+<p class="sub">Nada a reajustar.</p>
+{% endfor %}
+
+<p class="sub">Este retrato fica no <a href="/gestao/auditoria?entidade=reajuste">Histórico</a>
+— o "antes" só existe aqui, depois de gravado não há como recalculá-lo.</p>
+{% endblock %}

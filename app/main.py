@@ -36,6 +36,7 @@ from app.web.gestao_conflitos import router as gestao_conflitos_router
 from app.web.gestao_escalas import router as gestao_escalas_router
 from app.web.gestao_importacao import router as gestao_importacao_router
 from app.web.gestao_lancamento import router as gestao_lancamento_router
+from app.web.gestao_reajuste import router as gestao_reajuste_router
 from app.web.manual import router as manual_router
 
 BASE = Path(__file__).parent
@@ -127,6 +128,7 @@ app.include_router(gestao_router)
 app.include_router(gestao_escalas_router)
 app.include_router(gestao_conflitos_router)
 app.include_router(gestao_lancamento_router)
+app.include_router(gestao_reajuste_router)
 app.include_router(gestao_auditoria_router)
 app.include_router(gestao_config_router)
 app.include_router(gestao_backup_router)

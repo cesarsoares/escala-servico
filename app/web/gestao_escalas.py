@@ -25,7 +25,7 @@ from app.models.escala import Escala, EscalaConcorrente, Participacao, Posto
 from app.models.gestao import Usuario
 from app.models.militar import Militar
 from app.models.servico import Servico
-from app.services import auditoria, escala_service
+from app.services import auditoria, escala_service, reajuste
 from app.services import painel
 from app.services.publicacao import DIAS_SEMANA, MESES
 from app.web import ANO_MAX, ANO_MIN, templates
@@ -420,7 +420,14 @@ def participante_adicionar(
         auditoria.registrar(db, usuario_id=gestor.id, entidade="participacao",
                             entidade_id=vinculo.id, acao="alterar", antes=antes,
                             depois=auditoria.snapshot(vinculo))
+    # Participante novo entra pelo topo da fila (nunca serviu, regra 6.2), o que
+    # muda quem serve nos dias já fechados daqui para frente (item 2, 01/08).
+    rid = reajuste.registrar_auditoria(
+        db, gestor_id=gestor.id, origem="participante-incluido",
+        reajustes=[reajuste.reajustar(db, escala_id, date.today())])
     db.commit()
+    if rid:
+        return RedirectResponse(f"/gestao/reajuste/{rid}", status_code=303)
     return RedirectResponse(f"/gestao/escalas/{escala_id}?ok=participante-incluido#participantes", status_code=303)
 
 
@@ -442,7 +449,12 @@ def participante_isentar(
         auditoria.registrar(db, usuario_id=gestor.id, entidade="participacao",
                             entidade_id=vinculo.id, acao="excluir", antes=antes,
                             depois=auditoria.snapshot(vinculo))
+        rid = reajuste.registrar_auditoria(
+            db, gestor_id=gestor.id, origem="participante-isento",
+            reajustes=[reajuste.reajustar(db, escala_id, date.today())])
         db.commit()
+        if rid:
+            return RedirectResponse(f"/gestao/reajuste/{rid}", status_code=303)
     return RedirectResponse(f"/gestao/escalas/{escala_id}?ok=participante-isento#participantes", status_code=303)
 
 
